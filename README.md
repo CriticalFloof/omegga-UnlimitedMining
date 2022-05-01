@@ -13,10 +13,7 @@ Your plugin will be installed via omegga install gh:CriticalFloof/UnlimitedMinin
 
 A typed safe plugin for [omegga](https://github.com/brickadia-community/omegga).
 
-This is an auto-generated README file. Please change it before publishing your plugin!
-
-Be sure to edit the script in `setup.sh` to configure your plugin on install, or
-remove it entirely if it is unnecessary.
+This plugin is WIP, this repository is used to send files to a server host for testing.
 
 ## Install
 
