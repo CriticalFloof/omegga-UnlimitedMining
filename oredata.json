@@ -1,0 +1,222 @@
+
+{
+    "template": 
+    {
+        "name": "Template",
+        "description": "Example for anyone looking to add their own ores. If you see this in game, tell the owner",
+        "duribility": 0,
+        "value": 0,
+        "chanceWeight": 0,
+        "depth": 0,
+        "veinSize": 0,
+        "minPick": 0,
+        "consumesHeatSuit": false,
+        "consumesRadSuit": false,
+
+        "color": {"r":255,"g":255,"b":255,"a":255},
+        "light":
+        {
+            "brightness":0,
+            "color": {"r":255,"g":255,"b":255}
+        },
+        "audio":
+        {
+            "AudioDescriptor": "AudioObject",
+			"VolumeMultiplier":1, 
+			"PitchMultiplier":1
+        },
+        "material":
+        {
+            "physical_index": 0,
+	        "material_intensity": 0
+        }
+    },
+
+    "dirt": 
+        {
+            "name": "Dirt",
+            "description": "It's dirt cheap.",
+            "duribility": 10,
+            "value": 0,
+            "chanceWeight": 100,
+            "color": 
+            {
+                "r":160,
+                "g":100,
+                "b":20,
+                "a":255
+            }
+        },
+    
+    "lava": 
+        {
+            "name": "Lava",
+            "description": "Boiling Hot!",
+            "duribility": 50,
+            "value": 0,
+            "chanceWeight": 0.1,
+            "depth": -80,
+            "veinSize": 5,
+            "minPick": 0,
+            "consumesHeatSuit": true,
+            "consumesRadSuit": false,
+
+            "color": 
+            {
+                "r":255,
+                "g":160,
+                "b":50,
+                "a":255
+            }
+
+        },    
+
+    "iron": 
+        {
+            "name": "Iron",
+            "description": "A cheap and durible metal.",
+            "duribility": 100,
+            "value": 20,
+            "chanceWeight": 3,
+            "depth": -20,
+            "veinSize": 5,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+
+            "color": 
+            {
+                "r":200,
+                "g":200,
+                "b":200,
+                "a":255
+            }
+        },
+    "einsteinium": 
+        {
+            "name": "Einsteinium",
+            "description": "A synthetic element found in the debris of Hydrogen Bombs.",
+            "duribility": 58,
+            "value": 14,
+            "chanceWeight": 4,
+            "depth": -10,
+            "veinSize": 5,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+
+            "color": 
+            {
+                "r":0,
+                "g":200,
+                "b":0,
+                "a":255
+            }
+        },
+    "tin": 
+        {
+            "name": "Tin",
+            "description": "Cans are manufactured with this.",
+            "duribility": 80,
+            "value": 18,
+            "chanceWeight": 3,
+            "depth": -50,
+            "veinSize": 5,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+
+            "color": 
+            {
+                "r":200,
+                "g":200,
+                "b":200,
+                "a":255
+            }
+        },
+    "adamantium": 
+        {
+            "name": "Adamantium",
+            "description": "A virtually indestructable steel alloy",
+            "duribility": 100000,
+            "value": 23000,
+            "chanceWeight": 0.5,
+            "depth": -50000,
+            "veinSize": 3,
+            "minPick": 100,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+
+            "color": 
+            {
+                "r":200,
+                "g":60,
+                "b":60,
+                "a":255
+            }
+        },
+    "copper": 
+        {
+            "name": "Copper",
+            "description": "Shiny orange, sometimes dull green too.",
+            "duribility": 90,
+            "value": 20,
+            "chanceWeight": 4,
+            "depth": -40,
+            "veinSize": 5,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+
+            "color": 
+            {
+                "r":120,
+                "g":200,
+                "b":60,
+                "a":255
+            }
+        }, 
+    "mithril": 
+        {
+            "name": "Mithril",
+            "description": "A very strong and lightweight metal",
+            "duribility": 1000,
+            "value": 240,
+            "chanceWeight": 1,
+            "depth": -500,
+            "veinSize": 4,
+            "minPick": 30,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+
+            "color": 
+            {
+                "r":200,
+                "g":200,
+                "b":255,
+                "a":255
+            }
+        }, 
+    "orichalcum": 
+        {
+            "name": "Orichalcum",
+            "description": "A valuable yellowish metal",
+            "duribility": 200,
+            "value": 60,
+            "chanceWeight": 1,
+            "depth": -200,
+            "veinSize": 4,
+            "minPick": 30,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+
+            "color": 
+            {
+                "r":200,
+                "g":200,
+                "b":150,
+                "a":255
+            }
+        }
+
+}
