@@ -68,8 +68,9 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
     const oreChanceTotal = 5;
     
     
-
+      
     Omegga
+    /*
     .on('cmd:cleardata', async () => {
       this.store.wipe();
     })
@@ -89,6 +90,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
       console.log(playerData.money)
       await this.store.set(player.id,playerData)
     })
+    */
     /*
     Unlimited
     Mining 
@@ -198,6 +200,13 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
       const depth = playerZ.toFixed()
       
       Omegga.whisper(name,`Your ${height} is ${depth}`)
+    })
+    .on('cmd:helpmining', async (name)  => {
+      Omegga.whisper(name,`/upgradepick Upgrades your pickaxe once
+      /upgradepickall Upgrades your pick until you're broke
+      /bal /balance /money Checks your balance
+      /buy (heatsuits, radsuits) Allows you to buy heat/radsuits (Doesn't serve any purpose yet)
+      /depth Checks your depth.`)
     })
     /*
     Unlimited
@@ -595,7 +604,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
     
 
 
-    return { registeredCommands: ['money', 'balance','bal','upgradepick','upgradepickall','debuggivemoney'] };
+    return { registeredCommands: ['money', 'balance','bal','upgradepick','upgradepickall','helpmining','suits','buy','depth'] };
   }
 
   async stop() {
