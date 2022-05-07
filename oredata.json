@@ -14,6 +14,11 @@
         "consumesRadSuit": false,
 
         "color": {"r":255,"g":255,"b":255,"a":255},
+        "material":
+        {
+            "material_index": 0,
+	        "material_intensity": 0
+        },
         "light":
         {
             "brightness":0,
@@ -24,12 +29,8 @@
             "AudioDescriptor": "AudioObject",
 			"VolumeMultiplier":1, 
 			"PitchMultiplier":1
-        },
-        "material":
-        {
-            "physical_index": 0,
-	        "material_intensity": 0
         }
+        
     },
 
     "dirt": 
@@ -39,13 +40,24 @@
             "duribility": 10,
             "value": 0,
             "chanceWeight": 100,
+            "depth": 0,
+            "veinSize": 1,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
             "color": 
             {
                 "r":160,
                 "g":100,
                 "b":20,
                 "a":255
+            },
+            "material":
+            {
+                "material_index": 0,
+                "material_intensity": 0
             }
+            
         },
     
     "lava": 
@@ -64,9 +76,19 @@
             "color": 
             {
                 "r":255,
-                "g":160,
-                "b":50,
+                "g":60,
+                "b":0,
                 "a":255
+            },
+            "material":
+            {
+                "material_index": 2,
+                "material_intensity": 8
+            },
+            "light":
+            {
+                "brightness":30,
+                "color": {"r":255,"g":200,"b":40}
             }
 
         },    
@@ -90,6 +112,11 @@
                 "g":200,
                 "b":200,
                 "a":255
+            },
+            "material":
+            {
+                "material_index": 1,
+                "material_intensity":2 
             }
         },
     "einsteinium": 
@@ -111,9 +138,15 @@
                 "g":200,
                 "b":0,
                 "a":255
+            },
+            "material":
+            {
+                "material_index": 2,
+                "material_intensity":1
             }
         },
     "tin": 
+
         {
             "name": "Tin",
             "description": "Cans are manufactured with this.",
@@ -132,6 +165,11 @@
                 "g":200,
                 "b":200,
                 "a":255
+            },
+            "material":
+            {
+                "material_index": 1,
+                "material_intensity":3
             }
         },
     "adamantium": 
@@ -153,6 +191,11 @@
                 "g":60,
                 "b":60,
                 "a":255
+            },
+            "material":
+            {
+                "material_index": 1,
+                "material_intensity":8
             }
         },
     "copper": 
@@ -170,10 +213,15 @@
 
             "color": 
             {
-                "r":120,
-                "g":200,
-                "b":60,
+                "r":230,
+                "g":150,
+                "b":0,
                 "a":255
+            },
+            "material":
+            {
+                "material_index": 1,
+                "material_intensity":1
             }
         }, 
     "mithril": 
@@ -191,10 +239,15 @@
 
             "color": 
             {
-                "r":200,
-                "g":200,
+                "r":120,
+                "g":150,
                 "b":255,
                 "a":255
+            },
+            "material":
+            {
+                "material_index": 1,
+                "material_intensity":4
             }
         }, 
     "orichalcum": 
@@ -212,10 +265,15 @@
 
             "color": 
             {
-                "r":200,
-                "g":200,
-                "b":150,
+                "r":210,
+                "g":220,
+                "b":80,
                 "a":255
+            },
+            "material":
+            {
+                "material_index": 1,
+                "material_intensity":1
             }
         }
 
