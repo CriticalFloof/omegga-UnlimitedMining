@@ -385,7 +385,6 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                   }
                 }
                 //Check if the ore has value
-                console.log(oreTag.value != 0)
                 if(oreTag.value != 0) {
                   Omegga.middlePrint(player.name,`Mined ${oreTag.name} <br><color="44ff44">Worth ${oreTag.value}$</></>`)
                   playerData.money += oreTag.value
