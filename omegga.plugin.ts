@@ -174,8 +174,16 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
       if(buyType === "radsuit") {buyValue = 1000; buyType = "Radsuit"; s = "s";}
       const price = buyValue*quantity
       if(playerData.money >= price) {
-        if(buyType === "Heatsuit") {playerData.heatSuits += quantity;};
-        if(buyType === "Radsuit") {playerData.radSuits += quantity;};
+        Omegga.whisper(player.name, ` Bought ${quantity} ${buyType}${s} For <color="44ff44">${price}$</>`)
+        if(buyType === "Heatsuit") {
+          playerData.heatSuits += quantity;
+          Omegga.whisper(player.name, `You now have ${playerData.heatSuits} Heatsuits`)
+        };
+        if(buyType === "Radsuit") {
+          playerData.radSuits += quantity;
+          Omegga.whisper(player.name, `You now have ${playerData.radSuits} Radsuits`)
+        };
+        
       } else if (playerData.money <= price){
         Omegga.whisper(player.name, `<color="ff4444">${quantity} ${buyType}${s} Costs ${price}$. You have ${playerData.money}$</>`)
       } else {
@@ -410,9 +418,6 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
         }
         
       });
-    
-
-
     return { registeredCommands: ['money', 'balance','bal','upgradepick','upgradepickall','helpmining','suits','buy','depth'] };
   }
 
@@ -421,61 +426,64 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
   }
 }
 async function chunkLoadLoop() {
-  setTimeout(chunkLoadLoop, 100);
+  setTimeout(chunkLoadLoop, 300);
 loadedChunks = []
+try{
+  let Onlineplayers = await Omegga.getAllPlayerPositions()
+  //Get All Loaded Chunk Positions
+  for(let i = 0; i < Onlineplayers.length; i++){
+    
+    const playerObjectPos = Onlineplayers[i].pos
+    let playerChunkPos = 
+    (((playerObjectPos[0]+worldWidth/2+320) - (playerObjectPos[0]+worldWidth/2+320)%640)/640) + 
+    (((playerObjectPos[1]+worldWidth/2+320) - (playerObjectPos[1]+worldWidth/2+320)%640)/640)*worldWidth + 
+    (((playerObjectPos[2]+worldWidth/2+320) - (playerObjectPos[2]+worldWidth/2+320)%640)/640)*worldSquared;
 
-let Onlineplayers = await Omegga.getAllPlayerPositions()
-//Get All Loaded Chunk Positions
-for(let i = 0; i < Onlineplayers.length; i++){
-  
-  const playerObjectPos = Onlineplayers[i].pos
-  let playerChunkPos = 
-  (((playerObjectPos[0]+worldWidth/2+320) - (playerObjectPos[0]+worldWidth/2+320)%640)/640) + 
-  (((playerObjectPos[1]+worldWidth/2+320) - (playerObjectPos[1]+worldWidth/2+320)%640)/640)*worldWidth + 
-  (((playerObjectPos[2]+worldWidth/2+320) - (playerObjectPos[2]+worldWidth/2+320)%640)/640)*worldSquared;
-
-  for(let x = -loadDistance; x <= loadDistance; x++){
-    for(let y = -loadDistance; y <= loadDistance; y++){
-      for(let z = -loadDistance; z <= loadDistance; z++){
-        loadedChunks.push(playerChunkPos+x/*1*/+y*worldWidth/*2200000*/+z*worldSquared/*4840000000000*/)
+    for(let x = -loadDistance; x <= loadDistance; x++){
+      for(let y = -loadDistance; y <= loadDistance; y++){
+        for(let z = -loadDistance; z <= loadDistance; z++){
+          loadedChunks.push(playerChunkPos+x/*1*/+y*worldWidth/*2200000*/+z*worldSquared/*4840000000000*/)
+        }
       }
     }
   }
-}
-//Remove Duplicate values in loadedChunks
-let uniqueChunks = [];
-loadedChunks.forEach((i) => {
-  if(!uniqueChunks.includes(i)) {
-    uniqueChunks.push(i);
-  }
-});
-loadedChunks = uniqueChunks;
+  //Remove Duplicate values in loadedChunks
+  let uniqueChunks = [];
+  loadedChunks.forEach((i) => {
+    if(!uniqueChunks.includes(i)) {
+      uniqueChunks.push(i);
+    }
+  });
+  loadedChunks = uniqueChunks;
 
 
-//Loading
-//When in load distance of player, Load the Chuck Savefile if it exists
-for(let i = 0; i < loadedChunks.length; i++){
-  let x = (loadedChunks[i]%worldWidth) - ((worldWidth+320)/1280);
-  let y = (((loadedChunks[i]%worldSquared) - (loadedChunks[i]%worldWidth) - ((worldWidth+320)/1280)*worldWidth))/worldWidth;
-  let z = (((loadedChunks[i]) - (loadedChunks[i]%worldSquared) - ((worldWidth+320)/1280)*worldSquared))/worldSquared;
-  if(lastLoadedChunks != undefined) {
-    if(!lastLoadedChunks.includes(loadedChunks[i])){
-      Omegga.writeln(`Bricks.Load "ChunkLoader/Chunk ${x} ${y} ${z}" 0 0 0 1`)
+  //Loading
+  //When in load distance of player, Load the Chuck Savefile if it exists
+  for(let i = 0; i < loadedChunks.length; i++){
+    let x = (loadedChunks[i]%worldWidth) - ((worldWidth+320)/1280);
+    let y = (((loadedChunks[i]%worldSquared) - (loadedChunks[i]%worldWidth) - ((worldWidth+320)/1280)*worldWidth))/worldWidth;
+    let z = (((loadedChunks[i]) - (loadedChunks[i]%worldSquared) - ((worldWidth+320)/1280)*worldSquared))/worldSquared;
+    if(lastLoadedChunks != undefined) {
+      if(!lastLoadedChunks.includes(loadedChunks[i])){
+        Omegga.writeln(`Bricks.Load "ChunkLoader/Chunk ${x} ${y} ${z}" 0 0 0 1`)
+      }
     }
   }
-}
-//Saving
-//When out of load distance of player, Save the region then clear the region
-if(lastLoadedChunks != undefined){
-  for(let i = 0; i < lastLoadedChunks.length; i++){
-    let x = (lastLoadedChunks[i]%worldWidth) - ((worldWidth+320)/1280);
-    let y = (((lastLoadedChunks[i]%worldSquared) - (lastLoadedChunks[i]%worldWidth) - ((worldWidth+320)/1280)*worldWidth))/worldWidth;
-    let z = (((lastLoadedChunks[i]) - (lastLoadedChunks[i]%worldSquared) - ((worldWidth+320)/1280)*worldSquared))/worldSquared;
-    if(!loadedChunks.includes(lastLoadedChunks[i])){
-        Omegga.writeln(`Bricks.SaveRegion "ChunkLoader/Chunk ${x} ${y} ${z}" ${x*640+320} ${y*640+320} ${z*640+320} 320 320 320 0`)
-        Omegga.writeln(`Bricks.ClearRegion ${x*640+320} ${y*640+320} ${z*640+320} 320 320 320`)
+  //Saving
+  //When out of load distance of player, Save the region then clear the region
+  if(lastLoadedChunks != undefined){
+    for(let i = 0; i < lastLoadedChunks.length; i++){
+      let x = (lastLoadedChunks[i]%worldWidth) - ((worldWidth+320)/1280);
+      let y = (((lastLoadedChunks[i]%worldSquared) - (lastLoadedChunks[i]%worldWidth) - ((worldWidth+320)/1280)*worldWidth))/worldWidth;
+      let z = (((lastLoadedChunks[i]) - (lastLoadedChunks[i]%worldSquared) - ((worldWidth+320)/1280)*worldSquared))/worldSquared;
+      if(!loadedChunks.includes(lastLoadedChunks[i])){
+          Omegga.writeln(`Bricks.SaveRegion "ChunkLoader/Chunk ${x} ${y} ${z}" ${x*640+320} ${y*640+320} ${z*640+320} 320 320 320 0`)
+          Omegga.writeln(`Bricks.ClearRegion ${x*640+320} ${y*640+320} ${z*640+320} 320 320 320`)
+      }
     }
   }
-}
+  } catch(err){
+    console.error('Error loading chunk', err);
+  }
 lastLoadedChunks = loadedChunks;
 }
