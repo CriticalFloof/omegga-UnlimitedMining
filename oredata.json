@@ -1,7 +1,8 @@
 
 {
     "template": 
-    {
+    {   
+        "id": "template",
         "name": "Template",
         "description": "Example for anyone looking to add their own ores. If you see this in game, tell the owner",
         "duribility": 0,
@@ -35,6 +36,7 @@
 
     "dirt": 
         {
+            "id": "dirt",
             "name": "Dirt",
             "description": "It's dirt cheap.",
             "duribility": 10,
@@ -61,7 +63,8 @@
         },
     
     "lava": 
-        {
+        {   
+            "id": "lava",
             "name": "Lava",
             "description": "Boiling Hot!",
             "duribility": 50,
@@ -94,7 +97,8 @@
         },    
 
     "iron": 
-        {
+        {   
+            "id": "iron",
             "name": "Iron",
             "description": "A cheap and durible metal.",
             "duribility": 100,
@@ -120,7 +124,8 @@
             }
         },
     "einsteinium": 
-        {
+        {   
+            "id": "einsteinium",
             "name": "Einsteinium",
             "description": "A synthetic element found in the debris of Hydrogen Bombs.",
             "duribility": 58,
@@ -147,7 +152,8 @@
         },
     "tin": 
 
-        {
+        {   
+            "id": "tin",
             "name": "Tin",
             "description": "Cans are manufactured with this.",
             "duribility": 80,
@@ -173,7 +179,8 @@
             }
         },
     "adamantium": 
-        {
+        {   
+            "id": "adamantium",
             "name": "Adamantium",
             "description": "A virtually indestructable steel alloy",
             "duribility": 100000,
@@ -199,7 +206,8 @@
             }
         },
     "copper": 
-        {
+        {   
+            "id": "copper",
             "name": "Copper",
             "description": "Shiny orange, sometimes dull green too.",
             "duribility": 90,
@@ -225,7 +233,8 @@
             }
         }, 
     "mithril": 
-        {
+        {   
+            "id": "mithril",
             "name": "Mithril",
             "description": "A very strong and lightweight metal",
             "duribility": 1000,
@@ -251,7 +260,8 @@
             }
         }, 
     "orichalcum": 
-        {
+        {   
+            "id": "orichalcum",
             "name": "Orichalcum",
             "description": "A valuable yellowish metal",
             "duribility": 200,
@@ -275,6 +285,249 @@
                 "material_index": 1,
                 "material_intensity":1
             }
-        }
+        },
+    "diamond": 
+        {   
+            "id": "diamond",
+            "name": "Diamond",
+            "description": "A rare gem.",
+            "duribility": 5000,
+            "value": 2000,
+            "chanceWeight": 0.5,
+            "depth": -800,
+            "veinSize": 4,
+            "minPick": 100,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+
+            "color": 
+            {
+                "r":255,
+                "g":255,
+                "b":255,
+                "a":255
+            },
+            "material":
+            {
+                "material_index": 3,
+                "material_intensity":5
+            }
+        },
+        "diamondlattice": 
+            {   
+                "id": "diamondlattice",
+                "name": "Diamond-Lattice",
+                "description": "A rare gem, again.",
+                "duribility": 15000,
+                "value": 6200,
+                "chanceWeight": 0.5,
+                "depth": -1000,
+                "veinSize": 4,
+                "minPick": 100,
+                "consumesHeatSuit": false,
+                "consumesRadSuit": false,
+    
+                "color": 
+                {
+                    "r":200,
+                    "g":200,
+                    "b":230,
+                    "a":255
+                },
+                "material":
+                {
+                    "material_index": 3,
+                    "material_intensity":2
+                }
+            },
+            "magnetite": 
+                {   
+                    "id": "magnetite",
+                    "name": "Magnetite",
+                    "description": "Magnetic Rock",
+                    "duribility": 3000,
+                    "value": 1200,
+                    "chanceWeight": 0.5,
+                    "depth": -1000,
+                    "veinSize": 4,
+                    "minPick": 100,
+                    "consumesHeatSuit": false,
+                    "consumesRadSuit": false,
+        
+                    "color": 
+                    {
+                        "r":200,
+                        "g":200,
+                        "b":215,
+                        "a":255
+                    },
+                    "material":
+                    {
+                        "material_index": 0,
+                        "material_intensity":0
+                    }
+                },
+                "brickite": 
+                    {   
+                        "id": "brickite",
+                        "name": "Brickite",
+                        "description": "It's diet plastic",
+                        "duribility": 20000,
+                        "value": 7500,
+                        "chanceWeight": 0.5,
+                        "depth": -1000,
+                        "veinSize": 4,
+                        "minPick": 100,
+                        "consumesHeatSuit": false,
+                        "consumesRadSuit": false,
+            
+                        "color": 
+                        {
+                            "r":255,
+                            "g":25,
+                            "b":25,
+                            "a":255
+                        },
+                        "material":
+                        {
+                            "material_index": 0,
+                            "material_intensity":0
+                        }
+                    },
+                    "australium": 
+                        {   
+                            "id": "australium",
+                            "name": "Australium",
+                            "description": "Age Reversing and strong metal",
+                            "duribility": 150000,
+                            "value": 55000,
+                            "chanceWeight": 0.5,
+                            "depth": -1000,
+                            "veinSize": 4,
+                            "minPick": 100,
+                            "consumesHeatSuit": false,
+                            "consumesRadSuit": false,
+                
+                            "color": 
+                            {
+                                "r":255,
+                                "g":255,
+                                "b":115,
+                                "a":255
+                            },
+                            "material":
+                            {
+                                "material_index": 1,
+                                "material_intensity":10
+                            }
+                        },
+                        "coal": 
+                            {   
+                                "id": "coal",
+                                "name": "Coal",
+                                "description": "Usually for burning stuff",
+                                "duribility": 30,
+                                "value": 4,
+                                "chanceWeight": 0.5,
+                                "depth": -1000,
+                                "veinSize": 4,
+                                "minPick": 100,
+                                "consumesHeatSuit": false,
+                                "consumesRadSuit": false,
+                    
+                                "color": 
+                                {
+                                    "r":20,
+                                    "g":20,
+                                    "b":25,
+                                    "a":255
+                                },
+                                "material":
+                                {
+                                    "material_index": 0,
+                                    "material_intensity":0
+                                }
+                            },
+                            "gold": 
+                                {   
+                                    "id": "gold",
+                                    "name": "Gold",
+                                    "description": "A yellowish valuable metal",
+                                    "duribility": 400,
+                                    "value": 100,
+                                    "chanceWeight": 0.5,
+                                    "depth": -1000,
+                                    "veinSize": 4,
+                                    "minPick": 100,
+                                    "consumesHeatSuit": false,
+                                    "consumesRadSuit": false,
+                        
+                                    "color": 
+                                    {
+                                        "r":250,
+                                        "g":250,
+                                        "b":160,
+                                        "a":255
+                                    },
+                                    "material":
+                                    {
+                                        "material_index": 1,
+                                        "material_intensity":6
+                                    }
+                                },
+                                "cake": 
+                                    {   
+                                        "id": "cake",
+                                        "name": "<size=\"64\"><emoji>cake</></><br>",
+                                        "description": "Yummy!",
+                                        "duribility": 500000,
+                                        "value": 180000,
+                                        "chanceWeight": 0.5,
+                                        "depth": -1000,
+                                        "veinSize": 4,
+                                        "minPick": 100,
+                                        "consumesHeatSuit": false,
+                                        "consumesRadSuit": false,
+                            
+                                        "color": 
+                                        {
+                                            "r":250,
+                                            "g":220,
+                                            "b":250,
+                                            "a":255
+                                        },
+                                        "material":
+                                        {
+                                            "material_index": 0,
+                                            "material_intensity":0
+                                        }
+                                    },
+                                    "plasteel": 
+                                        {   
+                                            "id": "plasteel",
+                                            "name": "Plasteel",
+                                            "description": "A plastic metal",
+                                            "duribility": 60000,
+                                            "value": 14500,
+                                            "chanceWeight": 0.5,
+                                            "depth": -1000,
+                                            "veinSize": 4,
+                                            "minPick": 100,
+                                            "consumesHeatSuit": false,
+                                            "consumesRadSuit": false,
+                                
+                                            "color": 
+                                            {
+                                                "r":220,
+                                                "g":240,
+                                                "b":255,
+                                                "a":255
+                                            },
+                                            "material":
+                                            {
+                                                "material_index": 1,
+                                                "material_intensity":2
+                                            }
+                                        }
 
 }
