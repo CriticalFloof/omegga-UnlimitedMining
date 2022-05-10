@@ -3,7 +3,7 @@ import OreData from './oredata.json';
 
 
 
-type Config = { foo: string };
+type Config = { mineLimit:number };
 
 interface PlayerData {
   money:number,
@@ -13,16 +13,25 @@ interface PlayerData {
   lastBrickPosition:number,
   interactCooldown:boolean,
   heatSuits:number,
-  radSuits:number
+  radSuits:number,
+  commandContext:string,
+  rank:number
 }
 
-let chunkSize:number;
 let loadDistance:number;
 let worldWidth;
 let worldSquared
 let loadedChunks:any[];
 let lastLoadedChunks:any[];
+let chunkLoadFinished:boolean;
+let isWorldGenerating:boolean;
+let emptyBricks:Set<unknown>;
 
+let oreTypeJSON:any;
+let oreType:any;
+let oreTag:any;
+
+let mineLimit:number;
 
 export default class Plugin implements OmeggaPlugin<Config, Storage> {
   omegga: OL;
@@ -34,17 +43,21 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
     this.config = config;
     this.store = store;
   }
-
-
-
-   
-
+  
   async init() {
+    mineLimit = this.config.mineLimit;
+    
+
+    chunkLoadFinished = true;
     worldWidth= 2200000;
     worldSquared= 4840000000000;
     loadDistance = 1;
-    chunkSize = 640;
-    chunkLoadLoop();
+    generateWorld()
+
+
+    setInterval(chunkLoadLoop,4000)
+    setInterval(checkOverLimit,15000)
+
     //Give new players 
 
       Omegga
@@ -60,7 +73,9 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
               lastBrickPosition:null,
               interactCooldown:false,
               heatSuits:0,
-              radSuits:0
+              radSuits:0,
+              commandContext:"none",
+              rank:0
             }
             await this.store.set(player.id,playerData)
             console.log(await this.store.get(player.id))
@@ -73,8 +88,8 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
           console.error('Error giving player starting Data', err);
         }
       });
-    //List to save all mined bricks to.
-    var emptyBricks = new Set();
+
+
 
 
 
@@ -89,12 +104,72 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
     Mining 
     Commands
     */
-    .on('cmd:debuggivemoney', async name => {
+
+    .on('cmd:givememoney', async (name:string, amount:number) => {
+      let quantity:number = Number(amount);
       const player = Omegga.getPlayer(name)
       let playerData:PlayerData = await this.store.get(player.id)
-      playerData.money += 1000000000000;
+      if(amount === undefined) {
+      Omegga.whisper(player.name, `You ask for money but dont specify how much, nothing happens.`)
+      return;
+      }
+      Omegga.whisper(player.name, `A figure from above gives you ${amount}`)
+      playerData.money += quantity;
       await this.store.set(player.id,playerData)
     })
+
+    //Context Based Commands.  Usually for serious commands that need confirmation
+    .on('cmd:yes', async name => {
+      const player = Omegga.getPlayer(name)
+      let playerData:PlayerData = await this.store.get(player.id)
+
+      if(playerData.commandContext === "resetmystats") {
+        playerData = {
+          money:0,
+          pickaxeStrength:1,
+          clicksLeft:0,
+          levelUpCost:50,
+          lastBrickPosition:null,
+          interactCooldown:false,
+          heatSuits:0,
+          radSuits:0,
+          commandContext:"none",
+          rank:0
+        }
+        await this.store.set(player.id,playerData)
+        Omegga.whisper(player.name, `Player data reset!`)
+        return;
+      }
+
+      Omegga.whisper(player.name, `No Context Given.`)
+    })
+    .on('cmd:no', async name => {
+      const player = Omegga.getPlayer(name)
+      let playerData:PlayerData = await this.store.get(player.id)
+      if(playerData.commandContext !== "none") {
+        playerData.commandContext = "none"
+        await this.store.set(player.id,playerData)
+        Omegga.whisper(player.name, `Command Aborted.`)
+        return;
+      }
+      Omegga.whisper(player.name, `No Context Given.`)
+      
+
+    })
+
+
+
+
+    //RESET YOUR STATS
+    .on('cmd:resetmystats', async name => {
+      const player = Omegga.getPlayer(name)
+      let playerData:PlayerData = await this.store.get(player.id)
+      Omegga.whisper(player.name, `<size="20"><color="ff2222">Are you sure you want to reset your stats?</></>
+      Type /yes to confirm. /no to cancel`)
+      playerData.commandContext = "resetmystats"
+      await this.store.set(player.id,playerData)
+    })
+    
 
     //Checking Money
     .on('cmd:money', async name => {
@@ -124,13 +199,20 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
       const player = Omegga.getPlayer(name)
       let playerData:PlayerData = await this.store.get(player.id)
       if(playerData.money >= playerData.levelUpCost) {
+        if(playerData.rank*100+100 <= playerData.pickaxeStrength) {
+          Omegga.whisper(player.name, `You can't upgrade your pick past ${playerData.rank*100+100}! Use /rankup instead.`)
+          return;
+        }
         playerData.pickaxeStrength += 1;
         playerData.money += -playerData.levelUpCost;
         if (playerData.pickaxeStrength < 5) {
           playerData.levelUpCost = 50;
         } else {
-          playerData.levelUpCost = (Math.pow(playerData.pickaxeStrength, 1.3))+50
-          playerData.levelUpCost = Math.floor(playerData.levelUpCost)
+          if(playerData.rank > 0) {
+            playerData.levelUpCost = Math.floor(Math.pow(playerData.pickaxeStrength, 1.3))*playerData.rank
+          } else{
+            playerData.levelUpCost = Math.floor(Math.pow(playerData.pickaxeStrength, 1.3))+50
+          }
         }
         Omegga.whisper(player.name, `Pick upgraded to Level ${playerData.pickaxeStrength}`)
       } else {
@@ -138,30 +220,59 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
       }
       await this.store.set(player.id,playerData)
     })
-    //Upgrade Pickaxe until no money left 
+    //Upgrade Pickaxe until no money left or max level
     .on('cmd:upgradepickall', async name => {
       const player = Omegga.getPlayer(name)
       let playerData:PlayerData = await this.store.get(player.id)
       let upgraded:boolean = false;
       if (playerData.money >= playerData.levelUpCost) upgraded = true;
+      if(playerData.rank*100+100 <= playerData.pickaxeStrength) {
+        Omegga.whisper(player.name, `You can't upgrade your pick past ${playerData.rank*100+100}! Use /rankup instead.`)
+        return;
+      }
       while (playerData.money >= playerData.levelUpCost) {
         playerData.pickaxeStrength += 1;
         playerData.money += -playerData.levelUpCost;
         if (playerData.pickaxeStrength < 5) {
           playerData.levelUpCost = 50;
         } else {
-          playerData.levelUpCost = (Math.pow(playerData.pickaxeStrength, 1.3))+50
-          playerData.levelUpCost = Math.floor(playerData.levelUpCost)
+          if(playerData.rank > 0) {
+            playerData.levelUpCost = Math.floor(Math.pow(playerData.pickaxeStrength, 1.3))*playerData.rank
+          } else{
+            playerData.levelUpCost = Math.floor(Math.pow(playerData.pickaxeStrength, 1.3))+50
+          }
         }
-        
+        if(playerData.rank*100+100 <= playerData.pickaxeStrength) {
+          break;
+        }
       } 
       if(upgraded) { 
         Omegga.whisper(player.name, `Pick upgraded to Level ${playerData.pickaxeStrength}`)
       } else {
         Omegga.whisper(player.name, `<color="ff4444">1 Upgrade Costs ${playerData.levelUpCost}. You need ${playerData.levelUpCost-playerData.money} more cash to upgrade your pickaxe!</>`)
       }
+      
+
       await this.store.set(player.id,playerData)
     })
+    //Rank up
+    .on('cmd:rankup', async name => {
+      const player = Omegga.getPlayer(name)
+      let playerData:PlayerData = await this.store.get(player.id)
+      if (playerData.rank*100+100 <= playerData.pickaxeStrength) {
+        playerData.rank += 1;
+        playerData.pickaxeStrength = 1;
+        Omegga.whisper(name,`You are now rank ${playerData.rank}.`)
+        await this.store.set(player.id,playerData)
+        return;
+      }
+      Omegga.whisper(name,`You must reach your max level (${playerData.rank*100+100}) before ranking up.`)
+    })
+
+
+
+
+
     //Shop Command
     .on('cmd:buy', async (name:string, buyType:string, amount:number) => {
       let quantity:number;
@@ -201,6 +312,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
       
       Omegga.whisper(name,`Your ${height} is ${depth}`)
     })
+    //help
     .on('cmd:helpmining', async (name)  => {
       Omegga.whisper(name,`/upgradepick Upgrades your pickaxe once
       /upgradepickall Upgrades your pick until you're broke
@@ -230,24 +342,10 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
           setTimeout(async () => {playerData.interactCooldown = false; await this.store.set(player.id,playerData)},200)
           if (match) {
             let ore = match.groups.x
-            let oreTag;
+            
             //check what type of ore, and apply the type of ore to a tag
-            if (ore == "dirt") {oreTag = OreData.dirt} else
-            if (ore == "lava") {oreTag = OreData.lava} else
-            if (ore == "iron") {oreTag = OreData.iron} else
-            if (ore == "einsteinium") {oreTag = OreData.einsteinium} else
-            if (ore == "tin") {oreTag = OreData.tin} else
-            if (ore == "adamantium") {oreTag = OreData.adamantium} else
-            if (ore == "copper") {oreTag = OreData.copper} else
-            if (ore == "mithril") {oreTag = OreData.mithril} else
-            if (ore == "orichalcum") {oreTag = OreData.orichalcum}
-            
-            
-            let oreType;
-            
-
+            interactOreIndex(ore)
             //I am not familiar with JSON, I am aware this code is not efficent or readable AT ALL, but it works and Typescript gives me a headache.
-            //If anybody is reading and think they can improve this code, please contact Critical Floof#0217 on discord, I would greatly appreciate the help.
               
   
               if(playerData.lastBrickPosition!= positionX+positionY*worldWidth+positionZ*worldSquared) {
@@ -267,7 +365,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                 };
                 
                 
-                let oreTypeJSON;
+                
                 let brickPos = [];
               
                 //Check if neighbours have been previously mined
@@ -297,21 +395,9 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                     brickPos = []
                     //Ores that generate
                     if (Math.random() <= oreSpawnChance*10) {
-                      
-                      const randomOre = Math.floor(Math.random()*oreChanceTotal)
-
-                      if (randomOre <= 1) {oreTypeJSON = OreData.lava; oreType = "lava"} else
-                      if (randomOre <= 2) {oreTypeJSON = OreData.iron; oreType = "iron"} else
-                      if (randomOre <= 3) {oreTypeJSON = OreData.einsteinium; oreType = "einsteinium"} else
-                      if (randomOre <= 4) {oreTypeJSON = OreData.tin; oreType = "tin"} else
-                      if (randomOre <= 5) {oreTypeJSON = OreData.adamantium; oreType = "adamantium"} else
-                      if (randomOre <= 6) {oreTypeJSON = OreData.copper; oreType = "copper"} else
-                      if (randomOre <= 7) {oreTypeJSON = OreData.mithril; oreType = "mithril"} else
-                      if (randomOre <= 8) {oreTypeJSON = OreData.orichalcum; oreType = "orichalcum"} 
-                      
-                      
-                      
-                      
+                      const randomOre = Math.floor(Math.random()*Object.keys(OreData).length)
+                      //pick the ore based on the random number
+                      oreIndex(randomOre);
                     } else 
                     //What kind of dirt is shown at depth
                     {
@@ -336,6 +422,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                         'BMC_Plastic',
                         'BMC_Metallic',
                         'BMC_Glow',
+                        'BMC_Glass',
                         'BMC_Hologram',
                         'BMC_Ghost',
                         'BMC_Ghost_Fail'
@@ -417,72 +504,156 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
         }
         
       });
-    return { registeredCommands: ['money', 'balance','bal','upgradepick','upgradepickall','helpmining','suits','buy','depth'] };
+    return { registeredCommands: ['yes','no','resetmystats','money', 'balance','bal','upgradepick','upgradepickall','rankup','helpmining','suits','buy','depth','givememoney'] };
   }
 
   async stop() {
     // Anything that needs to be cleaned up...
   }
 }
-async function chunkLoadLoop() {
-  setTimeout(chunkLoadLoop, 300);
-loadedChunks = []
-try{
-  let Onlineplayers = await Omegga.getAllPlayerPositions()
-  //Get All Loaded Chunk Positions
-  for(let i = 0; i < Onlineplayers.length; i++){
-    
-    const playerObjectPos = Onlineplayers[i].pos
-    let playerChunkPos = 
-    (((playerObjectPos[0]+worldWidth/2+320) - (playerObjectPos[0]+worldWidth/2+320)%640)/640) + 
-    (((playerObjectPos[1]+worldWidth/2+320) - (playerObjectPos[1]+worldWidth/2+320)%640)/640)*worldWidth + 
-    (((playerObjectPos[2]+worldWidth/2+320) - (playerObjectPos[2]+worldWidth/2+320)%640)/640)*worldSquared;
 
-    for(let x = -loadDistance; x <= loadDistance; x++){
-      for(let y = -loadDistance; y <= loadDistance; y++){
-        for(let z = -loadDistance; z <= loadDistance; z++){
-          loadedChunks.push(playerChunkPos+x/*1*/+y*worldWidth/*2200000*/+z*worldSquared/*4840000000000*/)
+
+function interactOreIndex(ore) {
+  if (ore == "dirt") {oreTag = OreData.dirt} else
+  if (ore == "lava") {oreTag = OreData.lava} else
+  if (ore == "iron") {oreTag = OreData.iron} else
+  if (ore == "einsteinium") {oreTag = OreData.einsteinium} else
+  if (ore == "tin") {oreTag = OreData.tin} else
+  if (ore == "adamantium") {oreTag = OreData.adamantium} else
+  if (ore == "copper") {oreTag = OreData.copper} else
+  if (ore == "mithril") {oreTag = OreData.mithril} else
+  if (ore == "orichalcum") {oreTag = OreData.orichalcum} else
+  if (ore == "diamond") {oreTag = OreData.diamond} else
+  if (ore == "diamondlattice") {oreTag = OreData.diamondlattice} else
+  if (ore == "magnetite") {oreTag = OreData.magnetite} else
+  if (ore == "brickite") {oreTag = OreData.brickite} else
+  if (ore == "australium") {oreTag = OreData.australium} else
+  if (ore == "coal") {oreTag = OreData.coal} else
+  if (ore == "gold") {oreTag = OreData.gold} else
+  if (ore == "cake") {oreTag = OreData.cake} else
+  if (ore == "plasteel") {oreTag = OreData.plasteel}
+}
+
+
+function oreIndex(randomNumber) {
+  
+  if (randomNumber <= 1) {oreTypeJSON = OreData.lava} else
+  if (randomNumber <= 2) {oreTypeJSON = OreData.iron} else
+  if (randomNumber <= 3) {oreTypeJSON = OreData.einsteinium} else
+  if (randomNumber <= 4) {oreTypeJSON = OreData.tin} else
+  if (randomNumber <= 5) {oreTypeJSON = OreData.adamantium} else
+  if (randomNumber <= 6) {oreTypeJSON = OreData.copper} else
+  if (randomNumber <= 7) {oreTypeJSON = OreData.mithril} else
+  if (randomNumber <= 8) {oreTypeJSON = OreData.orichalcum} else
+  if (randomNumber <= 9) {oreTypeJSON = OreData.diamond} else
+  if (randomNumber <= 10) {oreTypeJSON = OreData.diamondlattice} else
+  if (randomNumber <= 11) {oreTypeJSON = OreData.magnetite} else
+  if (randomNumber <= 12) {oreTypeJSON = OreData.brickite} else
+  if (randomNumber <= 13) {oreTypeJSON = OreData.australium} else
+  if (randomNumber <= 14) {oreTypeJSON = OreData.coal} else
+  if (randomNumber <= 15) {oreTypeJSON = OreData.gold} else
+  if (randomNumber <= 16) {oreTypeJSON = OreData.cake} else
+  if (randomNumber <= 17) {oreTypeJSON = OreData.plasteel}
+
+  oreType = oreTypeJSON.id;
+}
+
+function checkOverLimit() {
+  if(isWorldGenerating) return
+  if(emptyBricks.size >= mineLimit) {
+    isWorldGenerating = true;
+    Omegga.broadcast(`<size="40"><color="ff2222">Server has hit the mine limit! Caving in the mine in 10 seconds...</></>`)
+    setTimeout(generateWorld, 10000)
+  }
+
+}
+
+
+function generateWorld() {
+  Omegga.writeln(`Bricks.Clearall`)
+  Omegga.writeln(`Bricks.Load "UnlimitedMiningStructures/Spawn" 0 0 0 0`)
+  Omegga.broadcast(`Generating World... You might want to press <size="24">ctrl+k</> to respawn.`)
+  emptyBricks = new Set();
+  isWorldGenerating = false;
+}
+
+
+
+//Whenever I touch this code, I dread.
+async function chunkLoadLoop() {
+  if(!chunkLoadFinished) {return}
+  chunkLoadFinished = false;
+  loadedChunks = []
+  try{
+    let Onlineplayers = await Omegga.getAllPlayerPositions()
+    //Get All Loaded Chunk Positions
+    for(let i = 0; i < Onlineplayers.length; i++){
+      
+      const playerObjectPos = Onlineplayers[i].pos
+      let playerChunkPos = 
+      (((playerObjectPos[0]+worldWidth/2+1280) - (playerObjectPos[0]+worldWidth/2+1280)%2560)/2560) + 
+      (((playerObjectPos[1]+worldWidth/2+1280) - (playerObjectPos[1]+worldWidth/2+1280)%2560)/2560)*worldWidth + 
+      (((playerObjectPos[2]+worldWidth/2+1280) - (playerObjectPos[2]+worldWidth/2+1280)%2560)/2560)*worldSquared;
+
+      for(let x = -loadDistance; x <= loadDistance; x++){
+        for(let y = -loadDistance; y <= loadDistance; y++){
+          for(let z = -loadDistance; z <= loadDistance; z++){
+            loadedChunks.push(playerChunkPos+x/*1*/+y*worldWidth/*2200000*/+z*worldSquared/*4840000000000*/)
+          }
         }
       }
     }
-  }
-  //Remove Duplicate values in loadedChunks
-  let uniqueChunks = [];
-  loadedChunks.forEach((i) => {
-    if(!uniqueChunks.includes(i)) {
-      uniqueChunks.push(i);
-    }
-  });
-  loadedChunks = uniqueChunks;
+    
+    //Remove Duplicate values in loadedChunks
+    let uniqueChunks = [];
+    loadedChunks.forEach((i) => {
+      if(!uniqueChunks.includes(i)) {
+        uniqueChunks.push(i);
+      }
+    });
+    loadedChunks = uniqueChunks;
 
 
-  //Loading
-  //When in load distance of player, Load the Chuck Savefile if it exists
-  for(let i = 0; i < loadedChunks.length; i++){
-    let x = (loadedChunks[i]%worldWidth) - ((worldWidth+320)/1280);
-    let y = (((loadedChunks[i]%worldSquared) - (loadedChunks[i]%worldWidth) - ((worldWidth+320)/1280)*worldWidth))/worldWidth;
-    let z = (((loadedChunks[i]) - (loadedChunks[i]%worldSquared) - ((worldWidth+320)/1280)*worldSquared))/worldSquared;
-    if(lastLoadedChunks != undefined) {
-      if(!lastLoadedChunks.includes(loadedChunks[i])){
-        Omegga.writeln(`Bricks.Load "ChunkLoader/Chunk ${x} ${y} ${z}" 0 0 0 1`)
+    //Loading
+    //When in load distance of player, Load the Chuck Savefile if it exists
+    for(let i = 0; i < loadedChunks.length; i++){
+      let x = (loadedChunks[i]%worldWidth) - ((worldWidth+1600)/5120);
+      let y = (((loadedChunks[i]%worldSquared) - (loadedChunks[i]%worldWidth) - ((worldWidth+1600)/5120)*worldWidth))/worldWidth;
+      let z = (((loadedChunks[i]) - (loadedChunks[i]%worldSquared) - ((worldWidth+1600)/5120)*worldSquared))/worldSquared;
+      if(lastLoadedChunks != undefined) {
+        if(!lastLoadedChunks.includes(loadedChunks[i])){
+          if(x == 0 && y == 0 && z == 0){
+            
+          } else{
+            //If too many calls to save/load chunks occur, brickadia wont be able to catch up and start to "flash" the chunks
+            Omegga.writeln(`Bricks.Load "ChunkLoader/Chunk ${x} ${y} ${z}" 0 0 0 1`)
+          }
+        }
       }
     }
-  }
-  //Saving
-  //When out of load distance of player, Save the region then clear the region
-  if(lastLoadedChunks != undefined){
-    for(let i = 0; i < lastLoadedChunks.length; i++){
-      let x = (lastLoadedChunks[i]%worldWidth) - ((worldWidth+320)/1280);
-      let y = (((lastLoadedChunks[i]%worldSquared) - (lastLoadedChunks[i]%worldWidth) - ((worldWidth+320)/1280)*worldWidth))/worldWidth;
-      let z = (((lastLoadedChunks[i]) - (lastLoadedChunks[i]%worldSquared) - ((worldWidth+320)/1280)*worldSquared))/worldSquared;
-      if(!loadedChunks.includes(lastLoadedChunks[i])){
-          Omegga.writeln(`Bricks.SaveRegion "ChunkLoader/Chunk ${x} ${y} ${z}" ${x*640+320} ${y*640+320} ${z*640+320} 320 320 320 0`)
-          Omegga.writeln(`Bricks.ClearRegion ${x*640+320} ${y*640+320} ${z*640+320} 320 320 320`)
+    //Saving
+    //When out of load distance of player, Save the region then clear the region
+    if(lastLoadedChunks != undefined){
+      for(let i = 0; i < lastLoadedChunks.length; i++){
+        let x = (lastLoadedChunks[i]%worldWidth) - ((worldWidth+1600)/5120);
+        let y = (((lastLoadedChunks[i]%worldSquared) - (lastLoadedChunks[i]%worldWidth) - ((worldWidth+1600)/5120)*worldWidth))/worldWidth;
+        let z = (((lastLoadedChunks[i]) - (lastLoadedChunks[i]%worldSquared) - ((worldWidth+1600)/5120)*worldSquared))/worldSquared;
+        if(!loadedChunks.includes(lastLoadedChunks[i])){
+          //Reserved for dedicated spawn chunk so players dont spawn in space.
+          if(x == 0 && y == 0 && z == 0){
+
+          } else{
+            //If too many calls to save/load chunks occur, brickadia wont be able to catch up and start to "flash" the chunks
+            Omegga.writeln(`Bricks.SaveRegion "ChunkLoader/Chunk ${x} ${y} ${z}" ${x*2560+1280} ${y*2560+1280} ${z*2560+1280} 1280 1280 1280 0`)
+            Omegga.writeln(`Bricks.ClearRegion ${x*2560+1280} ${y*2560+1280} ${z*2560+1280} 1280 1280 1280`)
+          }
+          
+        }
       }
     }
-  }
-  } catch(err){
-    console.error('Error loading chunk', err);
-  }
-lastLoadedChunks = loadedChunks;
+    } catch(err){
+      console.error('Error loading chunk', err);
+    }
+  lastLoadedChunks = loadedChunks;
+chunkLoadFinished = true;
 }
