@@ -18,12 +18,9 @@ interface PlayerData {
   rank:number
 }
 
-let loadDistance:number;
+
 let worldWidth;
 let worldSquared
-let loadedChunks:any[];
-let lastLoadedChunks:any[];
-let chunkLoadFinished:boolean;
 let isWorldGenerating:boolean;
 let emptyBricks:Set<unknown>;
 
@@ -48,14 +45,11 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
     mineLimit = this.config.mineLimit;
     
 
-    chunkLoadFinished = true;
     worldWidth= 2200000;
     worldSquared= 4840000000000;
-    loadDistance = 1;
+
     generateWorld()
 
-
-    setInterval(chunkLoadLoop,4000)
     setInterval(checkOverLimit,15000)
 
     //Give new players 
@@ -288,10 +282,12 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
         Omegga.whisper(player.name, ` Bought ${quantity} ${buyType}${s} For <color="44ff44">${price}$</>`)
         if(buyType === "Heatsuit") {
           playerData.heatSuits += quantity;
+          playerData.money += -price;
           Omegga.whisper(player.name, `You now have ${playerData.heatSuits} Heatsuits`)
         };
         if(buyType === "Radsuit") {
           playerData.radSuits += quantity;
+          playerData.money += -price;
           Omegga.whisper(player.name, `You now have ${playerData.radSuits} Radsuits`)
         };
         
@@ -313,12 +309,58 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
       Omegga.whisper(name,`Your ${height} is ${depth}`)
     })
     //help
-    .on('cmd:helpmining', async (name)  => {
-      Omegga.whisper(name,`/upgradepick Upgrades your pickaxe once
-      /upgradepickall Upgrades your pick until you're broke
-      /bal /balance /money Checks your balance
-      /buy (heatsuits, radsuits) Allows you to buy heat/radsuits (Doesn't serve any purpose yet)
-      /depth Checks your depth.`)
+    .on('cmd:helpmining', async (name:string, section:string, page:string)  => {
+      const player = Omegga.getPlayer(name)
+      console.log(section)
+      if(section == undefined) {
+        Omegga.whisper(player, `Brickadia Unlimited Mining Help Pages
+        <color="00ff00">/helpmining basic</> - Basic functions of the game
+        <color="00ff00">/helpmining info</> - How to play and extra info
+        <color="00ff00">/helpmining buy</> - The different shop commands
+        <color="00ff00">/helpmining drill</> - What drilling is and how to do it (soon!)
+        <color="00ff00">/helpmining build</> - How building in the game works (soon!)
+        <color="00ff00">/helpmining rank</> - What ranks are and how to rank up
+        <color="00ff00">/helpmining donating</> - The different ways of donating to players
+        <color="00ff00">/helpmining insurance</> - What insurance is and how to get it
+        <color="00ff00">/helpmining chance</> - Explanation of Chance Blocks
+        <color="00ff00">/helpmining admin</> - A description of admin capibilities.
+        Use <color="00ff00">PageUp</> and <color="00ff00">PageDown</> to scroll through chat.`)
+      } else if(section == "basic"){
+        if(page == undefined|| page == "1"){
+          Omegga.whisper(player, `Help page: Basic Commands
+          Reset Your Stats - <color="00ff00">/resetmystats</>
+          Teleport to one of the spawns - <color="00ff00">/spawn <number></>
+          Teleport to your designated spawn - <color="00ff00">/respawn</>
+          Upgrade one level - <color="00ff00">/upgradepick</>
+          Upgrade multiple levels - <color="00ff00">/upgradeall</> or <color="00ff00">/upgradeall <amount></>
+          View more of the basic commands -<color="00ffff>/helpmining basic 2</>"`)
+        } else if(page == "2") {
+          Omegga.whisper(player,`Help page: Basic Commands 2
+          Private Message someone - (<color="00ff00">/pm</> or <color="00ff00">/msg</>) <color="00ff00"><name> <msg></> 
+          Easily reply to the last DM - <color="00ff00">/r <msg></>
+          Ignore DMs from someone - <color="00ff00">/ignore <name></>
+          See a players playtime - <color="00ff00">/playtime <name></>`)
+        }
+      } else if(section == "info"){
+        if(page == undefined|| page == "1"){
+          Omegga.whisper(player,`Help page: Server Information
+          Mine ores by clicking on them to recive money
+          Use the money to upgrade and buy new items.
+          Gamemode By <color="22ff77">Critical Floof</>`)
+        }
+      } else if(section == "buy"){
+        if(page == undefined|| page == "1"){
+          Omegga.whisper(player,`Help page: Shop
+          For upgrading your pickaxe, use <color="00ff00">/helpmining basic</>
+          Gun - <color="00ff00">/buy gun</> - <color="00aa00">$250</>
+          Heat Suit - <color="00ff00">/buy heatsuit <amount></> - <color="00aa00">$200</> per layer
+          Radiation Suit - <color="00ff00">/buy radsuit <amount></> - <color="00aa00">$500</> per layer
+          Insurance - <color="00ff00">/buy insurance <amount></> - <color="00aa00">$0.8</> per unit
+          Dirt - <color="00ff00">/buy dirt <amount></> - <color="00aa00">$1</> per unit
+          To sell dirt - <color="00ff00">/sell dirt <amount></> - <color="00aa00">$1</> per unit`)
+        }
+      }
+      
     })
     /*
     Unlimited
@@ -327,8 +369,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
     */
 
     //Mining Functionality
-    
-      .on('interact', async ({ player, position, message }) => {
+      Omegga.on('interact', async ({ player, position, message }) => {
         let playerData:PlayerData = await this.store.get(player.id)
         if(!playerData.interactCooldown) {
           const positionX:number = position[0];
@@ -345,7 +386,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
             
             //check what type of ore, and apply the type of ore to a tag
             interactOreIndex(ore)
-            //I am not familiar with JSON, I am aware this code is not efficent or readable AT ALL, but it works and Typescript gives me a headache.
+            //Got to make the bricks serverside
               
   
               if(playerData.lastBrickPosition!= positionX+positionY*worldWidth+positionZ*worldSquared) {
@@ -394,7 +435,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                   for(let i = 0; 6 > i; i++){
                     brickPos = []
                     //Ores that generate
-                    if (Math.random() <= oreSpawnChance*10) {
+                    if (Math.random() <= oreSpawnChance*4) {
                       const randomOre = Math.floor(Math.random()*Object.keys(OreData).length)
                       //pick the ore based on the random number
                       oreIndex(randomOre);
@@ -578,82 +619,3 @@ function generateWorld() {
 }
 
 
-
-//Whenever I touch this code, I dread.
-async function chunkLoadLoop() {
-  if(!chunkLoadFinished) {return}
-  chunkLoadFinished = false;
-  loadedChunks = []
-  try{
-    let Onlineplayers = await Omegga.getAllPlayerPositions()
-    //Get All Loaded Chunk Positions
-    for(let i = 0; i < Onlineplayers.length; i++){
-      
-      const playerObjectPos = Onlineplayers[i].pos
-      let playerChunkPos = 
-      (((playerObjectPos[0]+worldWidth/2+1280) - (playerObjectPos[0]+worldWidth/2+1280)%2560)/2560) + 
-      (((playerObjectPos[1]+worldWidth/2+1280) - (playerObjectPos[1]+worldWidth/2+1280)%2560)/2560)*worldWidth + 
-      (((playerObjectPos[2]+worldWidth/2+1280) - (playerObjectPos[2]+worldWidth/2+1280)%2560)/2560)*worldSquared;
-
-      for(let x = -loadDistance; x <= loadDistance; x++){
-        for(let y = -loadDistance; y <= loadDistance; y++){
-          for(let z = -loadDistance; z <= loadDistance; z++){
-            loadedChunks.push(playerChunkPos+x/*1*/+y*worldWidth/*2200000*/+z*worldSquared/*4840000000000*/)
-          }
-        }
-      }
-    }
-    
-    //Remove Duplicate values in loadedChunks
-    let uniqueChunks = [];
-    loadedChunks.forEach((i) => {
-      if(!uniqueChunks.includes(i)) {
-        uniqueChunks.push(i);
-      }
-    });
-    loadedChunks = uniqueChunks;
-
-
-    //Loading
-    //When in load distance of player, Load the Chuck Savefile if it exists
-    for(let i = 0; i < loadedChunks.length; i++){
-      let x = (loadedChunks[i]%worldWidth) - ((worldWidth+1600)/5120);
-      let y = (((loadedChunks[i]%worldSquared) - (loadedChunks[i]%worldWidth) - ((worldWidth+1600)/5120)*worldWidth))/worldWidth;
-      let z = (((loadedChunks[i]) - (loadedChunks[i]%worldSquared) - ((worldWidth+1600)/5120)*worldSquared))/worldSquared;
-      if(lastLoadedChunks != undefined) {
-        if(!lastLoadedChunks.includes(loadedChunks[i])){
-          if(x == 0 && y == 0 && z == 0){
-            
-          } else{
-            //If too many calls to save/load chunks occur, brickadia wont be able to catch up and start to "flash" the chunks
-            Omegga.writeln(`Bricks.Load "ChunkLoader/Chunk ${x} ${y} ${z}" 0 0 0 1`)
-          }
-        }
-      }
-    }
-    //Saving
-    //When out of load distance of player, Save the region then clear the region
-    if(lastLoadedChunks != undefined){
-      for(let i = 0; i < lastLoadedChunks.length; i++){
-        let x = (lastLoadedChunks[i]%worldWidth) - ((worldWidth+1600)/5120);
-        let y = (((lastLoadedChunks[i]%worldSquared) - (lastLoadedChunks[i]%worldWidth) - ((worldWidth+1600)/5120)*worldWidth))/worldWidth;
-        let z = (((lastLoadedChunks[i]) - (lastLoadedChunks[i]%worldSquared) - ((worldWidth+1600)/5120)*worldSquared))/worldSquared;
-        if(!loadedChunks.includes(lastLoadedChunks[i])){
-          //Reserved for dedicated spawn chunk so players dont spawn in space.
-          if(x == 0 && y == 0 && z == 0){
-
-          } else{
-            //If too many calls to save/load chunks occur, brickadia wont be able to catch up and start to "flash" the chunks
-            Omegga.writeln(`Bricks.SaveRegion "ChunkLoader/Chunk ${x} ${y} ${z}" ${x*2560+1280} ${y*2560+1280} ${z*2560+1280} 1280 1280 1280 0`)
-            Omegga.writeln(`Bricks.ClearRegion ${x*2560+1280} ${y*2560+1280} ${z*2560+1280} 1280 1280 1280`)
-          }
-          
-        }
-      }
-    }
-    } catch(err){
-      console.error('Error loading chunk', err);
-    }
-  lastLoadedChunks = loadedChunks;
-chunkLoadFinished = true;
-}
