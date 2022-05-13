@@ -1,7 +1,13 @@
 {
   "name": "UnlimitedMining",
   "description": "A typed safe Omegga plugin.",
-  "author": "CriticalFloof",
-  "config": {},
+  "author": "Critical Floof",
+  "config": {
+    "mineLimit": {
+      "description": "This sets the limit of bricks that can be mined before the mine collapses.",
+      "default": 100000,
+      "type": "number"
+    }
+  },
   "commands": []
 }
