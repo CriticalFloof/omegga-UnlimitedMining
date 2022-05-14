@@ -1,0 +1,219 @@
+{
+    "dirt": 
+        {
+            "id": "dirt",
+            "name": "Dirt",
+            "description": "It's dirt cheap.",
+            "duribility": 10,
+            "depth": 50500,
+            "veinSize": 1,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+            "isOre":false,
+
+            "color": 
+            {
+                "r":160,
+                "g":100,
+                "b":20,
+                "a":255
+            },
+            "material":
+            {
+                "material_index": 0,
+                "material_intensity": 0
+            }
+            
+        },
+    "denseDirt": 
+        {
+            "id": "denseDirt",
+            "name": "Dense Dirt",
+            "description": "It's dirt cheap.",
+            "duribility": 15,
+            "depth": -250,
+            "veinSize": 1,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+            "isOre":false,
+
+            "color": 
+            {
+                "r":110,
+                "g":60,
+                "b":15,
+                "a":255
+            },
+            "material":
+            {
+                "material_index": 0,
+                "material_intensity": 0
+            }
+            
+        },
+    "hardDirt": 
+        {
+            "id": "hardDirt",
+            "name": "Hard Dirt",
+            "description": "It's dirt cheap.",
+            "duribility": 20,
+            "depth": -1250,
+            "veinSize": 1,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+            "isOre":false,
+
+            "color": 
+            {
+                "r":60,
+                "g":40,
+                "b":10,
+                "a":255
+            },
+            "material":
+            {
+                "material_index": 0,
+                "material_intensity": 0
+            }
+            
+        },
+    "seriouslyHardDirt": 
+        {
+            "id": "seriouslyhardDirt",
+            "name": "Seriously Hard Dirt",
+            "description": "It's dirt cheap.",
+            "duribility": 20,
+            "depth": -2250,
+            "veinSize": 1,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+            "isOre":false,
+
+            "color": 
+            {
+                "r":60,
+                "g":40,
+                "b":10,
+                "a":255
+            },
+            "material":
+            {
+                "material_index": 0,
+                "material_intensity": 0
+            }
+            
+        },
+    "rock": 
+        {
+            "id": "Rock",
+            "name": "Rock",
+            "description": "Thats stone",
+            "duribility": 20,
+            "depth": -3250,
+            "veinSize": 1,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+            "isOre":false,
+
+            "color": 
+            {
+                "r":60,
+                "g":40,
+                "b":10,
+                "a":255
+            },
+            "material":
+            {
+                "material_index": 0,
+                "material_intensity": 0
+            }
+            
+        },
+    "denseRock": 
+        {
+            "id": "denseRock",
+            "name": "Dense Rock",
+            "description": "Thats stone",
+            "duribility": 20,
+            "depth": -4250,
+            "veinSize": 1,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+            "isOre":false,
+
+            "color": 
+            {
+                "r":60,
+                "g":40,
+                "b":10,
+                "a":255
+            },
+            "material":
+            {
+                "material_index": 0,
+                "material_intensity": 0
+            }
+            
+        },
+    "hardRock": 
+        {
+            "id": "hardRock",
+            "name": "Hard Rock",
+            "description": "Thats stone",
+            "duribility": 20,
+            "depth": -5250,
+            "veinSize": 1,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+            "isOre":false,
+
+            "color": 
+            {
+                "r":60,
+                "g":40,
+                "b":10,
+                "a":255
+            },
+            "material":
+            {
+                "material_index": 0,
+                "material_intensity": 0
+            }
+            
+        },
+    "seriouslyhardRock": 
+        {
+            "id": "seriouslyhardRock",
+            "name": "Seriously Hard Rock",
+            "description": "Thats stone",
+            "duribility": 20,
+            "depth": -6250,
+            "veinSize": 1,
+            "minPick": 0,
+            "consumesHeatSuit": false,
+            "consumesRadSuit": false,
+            "isOre":false,
+
+            "color": 
+            {
+                "r":60,
+                "g":40,
+                "b":10,
+                "a":255
+            },
+            "material":
+            {
+                "material_index": 0,
+                "material_intensity": 0
+            }
+            
+        }
+    
+}
