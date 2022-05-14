@@ -512,7 +512,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
             //Got to make the bricks serverside
               
   
-              if(playerData.lastBrickPosition!= [positionX, positionY, positionZ]) {
+              if(playerData.lastBrickPosition[0] != positionX || playerData.lastBrickPosition[1] != positionY || playerData.lastBrickPosition[2] != positionZ) {
                 playerData.clicksLeft = oreTag.duribility
               }
               playerData.clicksLeft += -playerData.pickaxeStrength
