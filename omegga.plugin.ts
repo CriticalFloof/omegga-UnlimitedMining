@@ -1,5 +1,10 @@
-import OmeggaPlugin, { OL, PS, PC, _OMEGGA_UTILS_IMPORT, WriteSaveObject} from 'omegga';
+//BRICKADIA UNLIMITED MINING
+
+//Refactoring is needed.
+
+import OmeggaPlugin, { OL, PS, PC, _OMEGGA_UTILS_IMPORT, WriteSaveObject, Vector} from 'omegga';
 import OreData from './oredata.json';
+import LayerData from './layerdata.json'
 
 
 
@@ -10,7 +15,7 @@ interface PlayerData {
   pickaxeStrength:number,
   clicksLeft:number,
   levelUpCost:number,
-  lastBrickPosition:number,
+  lastBrickPosition:Vector,
   interactCooldown:boolean,
   heatSuits:number,
   radSuits:number,
@@ -18,15 +23,20 @@ interface PlayerData {
   rank:number
 }
 
+interface ServerStats {
+  serverEconPercent:number,
+  valueModifier:number
+}
 
-let worldWidth;
-let worldSquared
+
 let isWorldGenerating:boolean;
-let emptyBricks:Set<unknown>;
+let emptyBricks:Array<Vector>;
 
 let oreTypeJSON:any;
 let oreType:any;
 let oreTag:any;
+let oreValue:any;
+let serverData:ServerStats;
 
 let mineLimit:number;
 
@@ -42,15 +52,24 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
   }
   
   async init() {
-    mineLimit = this.config.mineLimit;
-    
+    serverData = await this.store.get("serverStats")
+    if(serverData == null) {
+      serverData = {
+      serverEconPercent:1,
+      valueModifier:1
+      }
+      await this.store.set("serverStats",serverData)
+    }
+    Omegga.broadcast(`Loading<color="22ff77"><size="24"> Brickadia Unlimited Mining!</></>`)
+    Omegga.broadcast(`<size="12">Verison 0.0.1</>`)
 
-    worldWidth= 2200000;
-    worldSquared= 4840000000000;
+    mineLimit = this.config.mineLimit;
+
+    
 
     generateWorld()
 
-    setInterval(checkOverLimit,15000)
+    setInterval(checkOverLimit,300000)
 
     //Give new players 
 
@@ -193,8 +212,8 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
       const player = Omegga.getPlayer(name)
       let playerData:PlayerData = await this.store.get(player.id)
       if(playerData.money >= playerData.levelUpCost) {
-        if(playerData.rank*100+100 <= playerData.pickaxeStrength) {
-          Omegga.whisper(player.name, `You can't upgrade your pick past ${playerData.rank*100+100}! Use /rankup instead.`)
+        if(playerData.rank*1000+1000 <= playerData.pickaxeStrength) {
+          Omegga.whisper(player.name, `You can't upgrade your pick past ${playerData.rank*1000+1000}! Use /rankup instead.`)
           return;
         }
         playerData.pickaxeStrength += 1;
@@ -215,16 +234,18 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
       await this.store.set(player.id,playerData)
     })
     //Upgrade Pickaxe until no money left or max level
-    .on('cmd:upgradepickall', async name => {
+    .on('cmd:upgradeall', async (name:string, amount?:number) => {
       const player = Omegga.getPlayer(name)
       let playerData:PlayerData = await this.store.get(player.id)
       let upgraded:boolean = false;
-      if (playerData.money >= playerData.levelUpCost) upgraded = true;
-      if(playerData.rank*100+100 <= playerData.pickaxeStrength) {
-        Omegga.whisper(player.name, `You can't upgrade your pick past ${playerData.rank*100+100}! Use /rankup instead.`)
+
+      if(amount != undefined) {
+        if (playerData.money >= playerData.levelUpCost) upgraded = true;
+        if(playerData.rank*1000+1000 <= playerData.pickaxeStrength) {
+        Omegga.whisper(player.name, `You can't upgrade your pick past ${playerData.rank*1000+1000}! Use /rankup instead.`)
         return;
       }
-      while (playerData.money >= playerData.levelUpCost) {
+      for (let i = 0; i < amount; i++) {
         playerData.pickaxeStrength += 1;
         playerData.money += -playerData.levelUpCost;
         if (playerData.pickaxeStrength < 5) {
@@ -236,31 +257,57 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
             playerData.levelUpCost = Math.floor(Math.pow(playerData.pickaxeStrength, 1.3))+50
           }
         }
-        if(playerData.rank*100+100 <= playerData.pickaxeStrength) {
+        if(playerData.rank*1000+1000 <= playerData.pickaxeStrength) {
           break;
         }
-      } 
-      if(upgraded) { 
-        Omegga.whisper(player.name, `Pick upgraded to Level ${playerData.pickaxeStrength}`)
-      } else {
-        Omegga.whisper(player.name, `<color="ff4444">1 Upgrade Costs ${playerData.levelUpCost}. You need ${playerData.levelUpCost-playerData.money} more cash to upgrade your pickaxe!</>`)
+        } 
+        if(upgraded) { 
+          Omegga.whisper(player.name, `Pick upgraded to Level ${playerData.pickaxeStrength}`)
+        } else {
+          Omegga.whisper(player.name, `<color="ff4444">1 Upgrade Costs ${playerData.levelUpCost}. You need ${playerData.levelUpCost-playerData.money} more cash to upgrade your pickaxe!</>`)
+        }
+      } else { 
+          if (playerData.money >= playerData.levelUpCost) upgraded = true;
+        if(playerData.rank*1000+1000 <= playerData.pickaxeStrength) {
+          Omegga.whisper(player.name, `You can't upgrade your pick past ${playerData.rank*1000+1000}! Use /rankup instead.`)
+          return;
+        }
+        while (playerData.money >= playerData.levelUpCost) {
+          playerData.pickaxeStrength += 1;
+          playerData.money += -playerData.levelUpCost;
+          if (playerData.pickaxeStrength < 5) {
+            playerData.levelUpCost = 50;
+          } else {
+            if(playerData.rank > 0) {
+              playerData.levelUpCost = Math.floor(Math.pow(playerData.pickaxeStrength, 1.3))*playerData.rank
+            } else{
+              playerData.levelUpCost = Math.floor(Math.pow(playerData.pickaxeStrength, 1.3))+50
+            }
+          }
+          if(playerData.rank*1000+1000 <= playerData.pickaxeStrength) {
+            break;
+          }
+          } 
+          if(upgraded) { 
+            Omegga.whisper(player.name, `Pick upgraded to Level ${playerData.pickaxeStrength}`)
+          } else {
+            Omegga.whisper(player.name, `<color="ff4444">1 Upgrade Costs ${playerData.levelUpCost}. You need ${playerData.levelUpCost-playerData.money} more cash to upgrade your pickaxe!</>`)
+        }
       }
-      
-
       await this.store.set(player.id,playerData)
     })
     //Rank up
     .on('cmd:rankup', async name => {
       const player = Omegga.getPlayer(name)
       let playerData:PlayerData = await this.store.get(player.id)
-      if (playerData.rank*100+100 <= playerData.pickaxeStrength) {
+      if (playerData.rank*1000+1000 <= playerData.pickaxeStrength) {
         playerData.rank += 1;
         playerData.pickaxeStrength = 1;
         Omegga.whisper(name,`You are now rank ${playerData.rank}.`)
         await this.store.set(player.id,playerData)
         return;
       }
-      Omegga.whisper(name,`You must reach your max level (${playerData.rank*100+100}) before ranking up.`)
+      Omegga.whisper(name,`You must reach your max level (${playerData.rank*1000+1000}) before ranking up.`)
     })
 
 
@@ -273,26 +320,32 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
       if (amount == undefined) {quantity = 1} else {quantity = Number(amount)}
       const player = Omegga.getPlayer(name)
       let playerData:PlayerData = await this.store.get(player.id)
-      let s:string;
       let buyValue:number;
-      if(buyType === "heatsuit") {buyValue = 100; buyType = "Heatsuit"; s = "s";}
-      if(buyType === "radsuit") {buyValue = 1000; buyType = "Radsuit"; s = "s";}
+      if(buyType === "heatsuit") {buyValue = 200;}
+      if(buyType === "radsuit") {buyValue = 500;}
+      if(buyType === "gun") {buyValue = 250;}
       const price = buyValue*quantity
       if(playerData.money >= price) {
-        Omegga.whisper(player.name, ` Bought ${quantity} ${buyType}${s} For <color="44ff44">${price}$</>`)
-        if(buyType === "Heatsuit") {
+        if(buyType === "heatsuit") {
           playerData.heatSuits += quantity;
           playerData.money += -price;
+          Omegga.whisper(player.name, `Bought ${quantity} Heatsuits For <color="44ff44">${price}$</>`)
           Omegga.whisper(player.name, `You now have ${playerData.heatSuits} Heatsuits`)
         };
-        if(buyType === "Radsuit") {
+        if(buyType === "radsuit") {
           playerData.radSuits += quantity;
           playerData.money += -price;
+          Omegga.whisper(player.name, `Bought ${quantity} Radsuits For <color="44ff44">${price}$</>`)
           Omegga.whisper(player.name, `You now have ${playerData.radSuits} Radsuits`)
+        };
+        if(buyType === "gun") {
+          playerData.money += -price;
+          Omegga.writeln(`Server.Players.GiveItem "${player.name}" weapon_pistol`)
+          Omegga.whisper(player.name, `Bought a Gun for <color="44ff44">${price}$</>`)
         };
         
       } else if (playerData.money <= price){
-        Omegga.whisper(player.name, `<color="ff4444">${quantity} ${buyType}${s} Costs ${price}$. You have ${playerData.money}$</>`)
+        Omegga.whisper(player.name, `<color="ff4444">${quantity} ${buyType} Costs ${price}$. You have ${playerData.money}$</>`)
       } else {
         Omegga.whisper(player.name, `<color="ff4444">Item Not Found.</>`)
       }
@@ -301,7 +354,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
     //Depth Check
     .on('cmd:depth', async (name)  => {
       const playerPosition = await Omegga.getPlayer(name).getPosition();
-      let playerZ = playerPosition[2]/10
+      let playerZ = playerPosition[2]/20
       let height;
       if(playerZ > 0){height = "height"} else {height = "depth"; playerZ *= -1}
       const depth = playerZ.toFixed()
@@ -313,51 +366,121 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
       const player = Omegga.getPlayer(name)
       console.log(section)
       if(section == undefined) {
-        Omegga.whisper(player, `Brickadia Unlimited Mining Help Pages
-        <color="00ff00">/helpmining basic</> - Basic functions of the game
-        <color="00ff00">/helpmining info</> - How to play and extra info
-        <color="00ff00">/helpmining buy</> - The different shop commands
-        <color="00ff00">/helpmining drill</> - What drilling is and how to do it (soon!)
-        <color="00ff00">/helpmining build</> - How building in the game works (soon!)
-        <color="00ff00">/helpmining rank</> - What ranks are and how to rank up
-        <color="00ff00">/helpmining donating</> - The different ways of donating to players
-        <color="00ff00">/helpmining insurance</> - What insurance is and how to get it
-        <color="00ff00">/helpmining chance</> - Explanation of Chance Blocks
-        <color="00ff00">/helpmining admin</> - A description of admin capibilities.
-        Use <color="00ff00">PageUp</> and <color="00ff00">PageDown</> to scroll through chat.`)
+        Omegga.whisper(player, `<size="24"><color="00ffff"> > Brickadia Unlimited Mining Help Pages</></>
+        <color="00ffff"> > </><color="00ff00">/helpmining basic</> - Basic functions of the game
+        <color="00ffff"> > </><color="00ff00">/helpmining info</> - How to play and extra info
+        <color="00ffff"> > </><color="00ff00">/helpmining buy</> - The different shop commands
+        <color="00ffff"> > </><color="00ff00">/helpmining drill</> - What drilling is and how to do it (soon!)
+        <color="00ffff"> > </><color="00ff00">/helpmining build</> - How building in the game works (soon!)
+        <color="00ffff"> > </><color="00ff00">/helpmining rank</> - What ranks are and how to rank up
+        <color="00ffff"> > </><color="00ff00">/helpmining donating</> - The different ways of donating to players
+        <color="00ffff"> > </><color="00ff00">/helpmining insurance</> - What insurance is and how to get it
+        <color="00ffff"> > </><color="00ff00">/helpmining chance</> - Explanation of Chance Blocks
+        <color="00ffff"> > </><color="00ff00">/helpmining admin</> - A description of admin capibilities.
+        <color="00ffff"> > </>Use <color="00ff00">PageUp</> and <color="00ff00">PageDown</> to scroll through chat.`)
       } else if(section == "basic"){
         if(page == undefined|| page == "1"){
-          Omegga.whisper(player, `Help page: Basic Commands
-          Reset Your Stats - <color="00ff00">/resetmystats</>
-          Teleport to one of the spawns - <color="00ff00">/spawn <number></>
-          Teleport to your designated spawn - <color="00ff00">/respawn</>
-          Upgrade one level - <color="00ff00">/upgradepick</>
-          Upgrade multiple levels - <color="00ff00">/upgradeall</> or <color="00ff00">/upgradeall <amount></>
-          View more of the basic commands -<color="00ffff>/helpmining basic 2</>"`)
+          Omegga.whisper(player, `<size="24"><color="00ffff"> > </>Help page: <color="00ff00">Basic Commands</></>
+          <color="00ffff"> > </>Reset Your Stats - <color="00ff00">/resetmystats</>
+          <color="00ffff"> > </>Teleport to one of the spawns - <color="00ff00">/spawn [number]</> (SOON!)
+          <color="00ffff"> > </>Teleport to your designated spawn - <color="00ff00">/respawn</> (SOON!)
+          <color="00ffff"> > </>Upgrade one level - <color="00ff00">/upgradepick</>
+          <color="00ffff"> > </>Upgrade multiple levels - <color="00ff00">/upgradeall</> or <color="00ff00">/upgradeall [amount]</>
+          <color="00ffff"> > </>View more of the basic commands -<color="00ffff>/helpmining basic 2</>"`)
         } else if(page == "2") {
-          Omegga.whisper(player,`Help page: Basic Commands 2
-          Private Message someone - (<color="00ff00">/pm</> or <color="00ff00">/msg</>) <color="00ff00"><name> <msg></> 
-          Easily reply to the last DM - <color="00ff00">/r <msg></>
-          Ignore DMs from someone - <color="00ff00">/ignore <name></>
-          See a players playtime - <color="00ff00">/playtime <name></>`)
+          Omegga.whisper(player,`<size="24"><color="00ffff"> > </>Help page: <color="00ff00">Basic Commands 2</></>
+          <color="00ffff"> > </>Private Message someone - (<color="00ff00">/pm</> or <color="00ff00">/msg</>) <color="00ff00">[name] [msg]</> (SOON!)
+          <color="00ffff"> > </>Easily reply to the last DM - <color="00ff00">/r [msg]</> (SOON!)
+          <color="00ffff"> > </>Ignore DMs from someone - <color="00ff00">/ignore [name]</> (SOON!)
+          <color="00ffff"> > </>See a players playtime - <color="00ff00">/playtime [name]</> (SOON!)
+          <color="00ffff"> > </>Check your depth - <color="00ff00">/depth</>`)
         }
       } else if(section == "info"){
         if(page == undefined|| page == "1"){
-          Omegga.whisper(player,`Help page: Server Information
-          Mine ores by clicking on them to recive money
-          Use the money to upgrade and buy new items.
-          Gamemode By <color="22ff77">Critical Floof</>`)
+          Omegga.whisper(player,`<size="24"><color="00ffff"> > </>Help page: <color="00ff00">Server Information</></>
+          <color="00ffff"> > </>Mine ores by clicking on them to recive money
+          <color="00ffff"> > </>Use the money to upgrade and buy new items.
+          <color="00ffff"> > </>Gamemode By <color="22ff77">Critical Floof</>`)
         }
       } else if(section == "buy"){
         if(page == undefined|| page == "1"){
-          Omegga.whisper(player,`Help page: Shop
-          For upgrading your pickaxe, use <color="00ff00">/helpmining basic</>
-          Gun - <color="00ff00">/buy gun</> - <color="00aa00">$250</>
-          Heat Suit - <color="00ff00">/buy heatsuit <amount></> - <color="00aa00">$200</> per layer
-          Radiation Suit - <color="00ff00">/buy radsuit <amount></> - <color="00aa00">$500</> per layer
-          Insurance - <color="00ff00">/buy insurance <amount></> - <color="00aa00">$0.8</> per unit
-          Dirt - <color="00ff00">/buy dirt <amount></> - <color="00aa00">$1</> per unit
-          To sell dirt - <color="00ff00">/sell dirt <amount></> - <color="00aa00">$1</> per unit`)
+          Omegga.whisper(player,`<size="24"><color="00ffff"> > </>Help page: <color="00ff00">Shop</></>
+          <color="00ffff"> > </>For upgrading your pickaxe, use <color="00ff00">/helpmining basic</>
+          <color="00ffff"> > </>Gun - <color="00ff00">/buy gun</> - <color="00aa00">$250</>
+          <color="00ffff"> > </>Heat Suit - <color="00ff00">/buy heatsuit [amount]</> - <color="00aa00">$200</> per layer
+          <color="00ffff"> > </>Radiation Suit - <color="00ff00">/buy radsuit [amount]</> - <color="00aa00">$500</> per layer
+          <color="00ffff"> > </>Insurance - <color="00ff00">/buy insurance [amount]</> - <color="00aa00">$0.8</> per unit (SOON!)
+          <color="00ffff"> > </>Dirt - <color="00ff00">/buy dirt [amount]</> - <color="00aa00">$1</> per unit (SOON!)
+          <color="00ffff"> > </>To sell dirt - <color="00ff00">/sell dirt [amount]</> - <color="00aa00">$1</> per unit (SOON!)`)
+        }
+      } else if(section == "drill"){
+        if(page == undefined|| page == "1"){
+          Omegga.whisper(player,`<size="24"><color="00ffff"> > </>Help page: <color="00ff00">Drills (SOON!)</></>
+          <color="00ffff"> > </>Drills are a quicker method of digging tunnels.
+          <color="00ffff"> > </>A basic drill does not return the cash from ores it destroys.
+          <color="00ffff"> > </>Drills consume dirt as fuel; 1 fuel for 1 block drilled.
+          <color="00ffff"> > </>Drills can only run on the same surface that you click, holes will cause irregularities
+          <color="00ffff"> > </>To start a drill, use <color="00ff00">/drill [depth] [size]</>
+          <color="00ffff"> > </>For further information, use <color="00ff00">/helpmining drill 2</>`)
+        } else if(page == "2"){
+          Omegga.whisper(player,`<size="24"><color="00ffff"> > </>Help page: <color="00ff00">Drills 2 (SOON!)</></>
+          <color="00ffff"> > </>Drill twice as fast for the cost of 25 pick levels with <color="00ff00">/buyturbodrill</>
+          <color="00ffff"> > </>Drill ten times faster for the cost of 150 pick levels<color="00ff00">/buysuperturbodrill</>
+          <color="00ffff"> > </>Drill without destroying ores with the Ore Drill for the cost of 50 pick levels with <color="00ff00">/buyoredrill</>
+          <color="00ffff"> > </>The Ore Drill uses 5x more dirt than the basic drill. Use it with <color="00ff00">/oredrill [depth] [size]</>
+          <color="00ffff"> > </>The Lava Drill uses 6x more dirt than the basic drill. Use it with <color="00ff00">/lavadrill [depth] [size]</>`)
+        }
+      } else if(section == "build"){
+        if(page == undefined|| page == "1"){
+          Omegga.whisper(player,`<size="24"><color="00ffff"> > </><color="00ff00">Help page: Building (SOON!)</></>`)
+        }
+      } else if(section == "rank"){
+        if(page == undefined|| page == "1"){
+          Omegga.whisper(player,`<size="24"><color="00ffff"> > </>Help page: <color="00ff00">Ranks</></>
+          <color="00ffff"> > </>Everyone starts with Rank 0.
+          <color="00ffff"> > </>You gain Rank 1 at level 1000.
+          <color="00ffff"> > </>The Max rank is 100.
+          <color="00ffff"> > </>When you rank up, your pick level is reset to
+          <color="00ffff"> > </>near level 1, but you gain bonuses.
+          <color="00ffff"> > </>One of the minor bonuses are larger drills.`)
+        }
+      } else if(section == "donating"){
+        if(page == undefined|| page == "1"){
+          Omegga.whisper(player,`<size="24"><color="00ffff"> > </>Help page: <color="00ff00">Donating</></>
+          <color="00ffff"> > </>Donating money - <color="00ff00">/donate [player] [amount]</>
+          <color="00ffff"> > </>Donating dirt - <color="00ff00">/donatedirt [p] [a]</>
+          <color="00ffff"> > </>Donating heatsuits - <color="00ff00">/donatehs [p] [a]</>
+          <color="00ffff"> > </>Donating radsuits - <color="00ff00">/donaters [p] [a]</>`)
+        }
+      } else if(section == "insurance"){
+        if(page == undefined|| page == "1"){
+          Omegga.whisper(player,`<size="24"><color="00ffff"> > </>Help page: <color="00ff00">Insurance</></>
+          <color="00ffff"> > </>Insurance protects you from the bad effects of Chance Blocks.
+          <color="00ffff"> > </>When you mine a Chance Block, your insurance will cover all or only
+          <color="00ffff"> > </>some of the loss, depending on how much insurance you have.
+          <color="00ffff"> > </>Insurance costs <color="00aa00">$0.8</> per unit, and is bought with <color="00ff00">/buy insurance [amount]</>
+          <color="00ffff"> > </><color="ff0000">Insurance is lost when you log out</>`)
+        }
+      } else if(section == "chance"){
+        if(page == undefined|| page == "1"){
+          Omegga.whisper(player,`<size="24"><color="00ffff"> > </>Help page: <color="00ff00">Chance Blocks</></>
+          <color="00ffff"> > </>Chance Blocks give a random reward when mined.
+          <color="00ffff"> > </>Whether the reward is "good" or "bad" is random.
+          <color="00ffff"> > </>You can use insurance (<color="00ff00">/helpmining insurance</>) to prevent losses.
+          <color="00ffff"> > </>Radioactive Chance Blocks and Core Chance Blocks appear deep underground, and
+          <color="00ffff"> > </>have more extreme rewards, respectively. Core Chance Blocks are mostly immune to 
+          <color="00ffff"> > </>insurance and have a 10% greater chance to give a "bad" reward.`)
+        }
+      } else if(section == "admin"){
+        if(page == undefined|| page == "1"){
+          Omegga.whisper(player,`<size="24"><color="00ffff"> > </>Help page: <color="00ff00">Admin</></>
+          <color="00ffff"> > </>Admins monitor the server. helping players and
+          <color="00ffff"> > </>removing those who dont follow the rules.
+          <color="00ffff"> > </>Admin Privileges:
+          <color="00ffff"> > </>- Access to players' stats
+          <color="00ffff"> > </>- Can set buffs and yields
+          <color="00ffff"> > </>- Access to debug and power mode
+          <color="00ffff"> > </>- More.`)
         }
       }
       
@@ -389,15 +512,15 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
             //Got to make the bricks serverside
               
   
-              if(playerData.lastBrickPosition!= positionX+positionY*worldWidth+positionZ*worldSquared) {
+              if(playerData.lastBrickPosition!= [positionX, positionY, positionZ]) {
                 playerData.clicksLeft = oreTag.duribility
               }
               playerData.clicksLeft += -playerData.pickaxeStrength
               if(playerData.clicksLeft <= 0) {
                 // Functions that are nested in the actual init() because I dont know how to get Sets to work in a global or module scope at all.
                 // Deleting and storing the brick coordinates in a set
-                emptyBricks.add(positionX+positionY*worldWidth+positionZ*worldSquared);
-                Omegga.writeln(`Bricks.ClearRegion ${positionX} ${positionY} ${positionZ} 20 20 20`);
+                emptyBricks.push([positionX, positionY, positionZ]);
+                Omegga.writeln(`Bricks.ClearRegion ${position[0]} ${position[1]} ${position[2]} 20 20 20`);
 
                 // Comparing index and placing neighbour dirt 
                 const publicUser = {
@@ -410,12 +533,12 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                 let brickPos = [];
               
                 //Check if neighbours have been previously mined
-                const x0 = positionX-40+positionY*worldWidth+positionZ*worldSquared
-                const y0 = positionX+(positionY-40)*worldWidth+positionZ*worldSquared
-                const z0 = positionX+positionY*worldWidth+(positionZ-40)*worldSquared
-                const x1 = positionX+40+positionY*worldWidth+positionZ*worldSquared
-                const y1 = positionX+(positionY+40)*worldWidth+positionZ*worldSquared
-                const z1 = positionX+positionY*worldWidth+(positionZ+40)*worldSquared
+                const x0:Vector = [positionX-40, positionY, positionZ]
+                const y0:Vector = [positionX, positionY-40, positionZ]
+                const z0:Vector = [positionX, positionY, positionZ-40]
+                const x1:Vector = [positionX+40, positionY, positionZ]
+                const y1:Vector = [positionX, positionY+40, positionZ]
+                const z1:Vector = [positionX, positionY, positionZ+40]
 
                 let x0push = true
                 let y0push = true
@@ -423,27 +546,30 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                 let x1push = true
                 let y1push = true
                 let z1push = true
-            
-                if (emptyBricks.has(x0)){x0push = false}
-                if (emptyBricks.has(y0)){y0push = false}
-                if (emptyBricks.has(z0)){z0push = false}
-                if (emptyBricks.has(x1)){x1push = false}
-                if (emptyBricks.has(y1)){y1push = false}
-                if (emptyBricks.has(z1)){z1push = false}
+                for(let i = 0; i < emptyBricks.length; i++) {
+                  console.log(`${emptyBricks[i][0]},${emptyBricks[i][1]},${emptyBricks[i][2]}`)
+                  if (emptyBricks[i][0] == x0[0]&&emptyBricks[i][1] == x0[1]&&emptyBricks[i][2] == x0[2]){x0push = false}
+                  if (emptyBricks[i][0] == y0[0]&&emptyBricks[i][1] == y0[1]&&emptyBricks[i][2] == y0[2]){y0push = false}
+                  if (emptyBricks[i][0] == z0[0]&&emptyBricks[i][1] == z0[1]&&emptyBricks[i][2] == z0[2]){z0push = false}
+                  if (emptyBricks[i][0] == x1[0]&&emptyBricks[i][1] == x1[1]&&emptyBricks[i][2] == x1[2]){x1push = false}
+                  if (emptyBricks[i][0] == y1[0]&&emptyBricks[i][1] == y1[1]&&emptyBricks[i][2] == y1[2]){y1push = false}
+                  if (emptyBricks[i][0] == z1[0]&&emptyBricks[i][1] == z1[1]&&emptyBricks[i][2] == z1[2]){z1push = false}
+                }
 
                   // Ore randomizer !!!Please Update this
                   for(let i = 0; 6 > i; i++){
                     brickPos = []
                     //Ores that generate
                     if (Math.random() <= oreSpawnChance*4) {
-                      const randomOre = Math.floor(Math.random()*Object.keys(OreData).length)
+                      
                       //pick the ore based on the random number
-                      oreIndex(randomOre);
+                      oreIndex(positionZ/20);
                     } else 
                     //What kind of dirt is shown at depth
-                    {
-                      oreType = "dirt"
-                      oreTypeJSON = OreData.dirt
+                    { 
+                      if(i == 2){layerDepthIndex((positionZ-40)/20);}
+                      if(i == 5){layerDepthIndex((positionZ+40)/20);}
+                      if(i == 0 || i == 1 || i == 3 || i == 4){layerDepthIndex((positionZ)/20);}
                     }
 
                     if (i == 0 && x0push) {brickPos.push({xPos:-40, yPos:0, zPos:0});}
@@ -486,7 +612,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                               
                              }
                            }              
-                        })      
+                        })
                         ),
                     };
                     if (brickPos.length != 0) {
@@ -513,16 +639,16 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                   }
                 }
                 //Check if the ore has value
-                if(oreTag.value != 0) {
-                  Omegga.middlePrint(player.name,`Mined ${oreTag.name} <br><color="44ff44">Worth ${oreTag.value}$</></>`)
-                  playerData.money += oreTag.value
+                if(oreValue != 0) {
+                  Omegga.middlePrint(player.name,`Mined ${oreTag.name} <br><color="44ff44">Worth ${oreValue}$</></>`)
+                  playerData.money += oreValue
                 } else {
                   Omegga.middlePrint(player.name,`Mined ${oreTag.name}`)
                 }
               } //Outside the "breaking brick" Conditional vvv
               else {
-                if(oreTag.value != 0) {
-                  Omegga.middlePrint(player.name,`${oreTag.name} ${playerData.clicksLeft} / ${oreTag.duribility} <br><color="44ff44">Worth ${oreTag.value}$</></>`)
+                if(oreValue != 0) {
+                  Omegga.middlePrint(player.name,`${oreTag.name} ${playerData.clicksLeft} / ${oreTag.duribility} <br><color="44ff44">Worth ${oreValue}$</></>`)
                 } else {
                   Omegga.middlePrint(player.name,`${oreTag.name} ${playerData.clicksLeft} / ${oreTag.duribility}`)
                 }
@@ -539,13 +665,13 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                   }
                 }
               }
-        playerData.lastBrickPosition = positionX+positionY*worldWidth+positionZ*worldSquared
+        playerData.lastBrickPosition = [positionX, positionY, positionZ]
         await this.store.set(player.id,playerData)
         }
         }
         
       });
-    return { registeredCommands: ['yes','no','resetmystats','money', 'balance','bal','upgradepick','upgradepickall','rankup','helpmining','suits','buy','depth','givememoney'] };
+    return { registeredCommands: ['yes','no','resetmystats','money', 'balance','bal','upgradepick','upgradeall','rankup','helpmining','suits','buy','depth','givememoney'] };
   }
 
   async stop() {
@@ -553,58 +679,95 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
   }
 }
 
+//This function handles all different minable bricks and sets the oretag to what was clicked
+async function interactOreIndex(ore) {
 
-function interactOreIndex(ore) {
-  if (ore == "dirt") {oreTag = OreData.dirt} else
-  if (ore == "lava") {oreTag = OreData.lava} else
-  if (ore == "iron") {oreTag = OreData.iron} else
-  if (ore == "einsteinium") {oreTag = OreData.einsteinium} else
-  if (ore == "tin") {oreTag = OreData.tin} else
-  if (ore == "adamantium") {oreTag = OreData.adamantium} else
-  if (ore == "copper") {oreTag = OreData.copper} else
-  if (ore == "mithril") {oreTag = OreData.mithril} else
-  if (ore == "orichalcum") {oreTag = OreData.orichalcum} else
-  if (ore == "diamond") {oreTag = OreData.diamond} else
-  if (ore == "diamondlattice") {oreTag = OreData.diamondlattice} else
-  if (ore == "magnetite") {oreTag = OreData.magnetite} else
-  if (ore == "brickite") {oreTag = OreData.brickite} else
-  if (ore == "australium") {oreTag = OreData.australium} else
-  if (ore == "coal") {oreTag = OreData.coal} else
-  if (ore == "gold") {oreTag = OreData.gold} else
-  if (ore == "cake") {oreTag = OreData.cake} else
-  if (ore == "plasteel") {oreTag = OreData.plasteel}
+  let layerIndex = [];
+  for(let i in LayerData){
+    layerIndex.push(LayerData [i])
+  }
+
+  for(let i = 0; i < layerIndex.length; i++) {
+    if (ore == layerIndex[i].id) {oreTag = layerIndex[i]}
+  }
+
+    let oreIndex = [];
+  for(let i in OreData){
+    oreIndex.push(OreData [i])
+  }
+
+  for(let i = 0; i < oreIndex.length; i++) {
+    if (ore == oreIndex[i].id) {oreTag = oreIndex[i]}
+  }
+
+  if(oreTag.isOre == false) {
+    oreValue = 0
+  } else {
+    oreValue = Math.floor((oreTag.duribility/4)*serverData.serverEconPercent*serverData.valueModifier)
+  }
 }
 
 
-function oreIndex(randomNumber) {
-  
-  if (randomNumber <= 1) {oreTypeJSON = OreData.lava} else
-  if (randomNumber <= 2) {oreTypeJSON = OreData.iron} else
-  if (randomNumber <= 3) {oreTypeJSON = OreData.einsteinium} else
-  if (randomNumber <= 4) {oreTypeJSON = OreData.tin} else
-  if (randomNumber <= 5) {oreTypeJSON = OreData.adamantium} else
-  if (randomNumber <= 6) {oreTypeJSON = OreData.copper} else
-  if (randomNumber <= 7) {oreTypeJSON = OreData.mithril} else
-  if (randomNumber <= 8) {oreTypeJSON = OreData.orichalcum} else
-  if (randomNumber <= 9) {oreTypeJSON = OreData.diamond} else
-  if (randomNumber <= 10) {oreTypeJSON = OreData.diamondlattice} else
-  if (randomNumber <= 11) {oreTypeJSON = OreData.magnetite} else
-  if (randomNumber <= 12) {oreTypeJSON = OreData.brickite} else
-  if (randomNumber <= 13) {oreTypeJSON = OreData.australium} else
-  if (randomNumber <= 14) {oreTypeJSON = OreData.coal} else
-  if (randomNumber <= 15) {oreTypeJSON = OreData.gold} else
-  if (randomNumber <= 16) {oreTypeJSON = OreData.cake} else
-  if (randomNumber <= 17) {oreTypeJSON = OreData.plasteel}
+function oreIndex(depth) {
 
+  let oreIndex = [];
+  let weightedOreIndex = [];
+  let j = 0;
+  let weightTotal = 0;
+  for(let i in OreData){
+    oreIndex.push(OreData [i])
+    if(depth<oreIndex[j].depth){
+      weightTotal += oreIndex[j].chanceWeight*10
+    } else if(depth<oreIndex[j].depth-2000&&depth>oreIndex[j].depth-10000){
+      //num from 0 - 8000
+      let difference = depth-oreIndex[j].depth-2000
+      difference = (difference/-80)+100
+      if(difference < 10) difference = 10
+      weightTotal += oreIndex[j].chanceWeight*10/difference
+    } else if(depth<oreIndex[j].depth-10000){
+      weightTotal += oreIndex[j].chanceWeight*10/10
+    }
+    weightTotal = Math.floor(weightTotal)
+    weightedOreIndex.push(weightTotal)
+    j++
+  }
+  const randomNumber = Math.random()*weightTotal
+  let isFound = false
+  for(let i = 0; i < weightedOreIndex.length; i++){
+    if(randomNumber <= weightedOreIndex[i] && !isFound){
+      oreTypeJSON = oreIndex[i]
+      isFound = true;
+    }
+    
+  }
+  oreType = oreTypeJSON.id;
+}
+
+function layerDepthIndex(depth){
+  let isFound = false;
+  let layerIndex = [];
+  for(let i in LayerData) {
+    layerIndex.push(LayerData [i])
+  }
+  layerIndex.reverse()
+  for(let i = 0; i < layerIndex.length; i++){
+    if(depth <= layerIndex[i].depth &&!isFound){
+      oreTypeJSON = layerIndex[i]
+      isFound = true;
+    }
+  }
+  
   oreType = oreTypeJSON.id;
 }
 
 function checkOverLimit() {
   if(isWorldGenerating) return
-  if(emptyBricks.size >= mineLimit) {
+  if(emptyBricks.length >= mineLimit) {
     isWorldGenerating = true;
     Omegga.broadcast(`<size="40"><color="ff2222">Server has hit the mine limit! Caving in the mine in 10 seconds...</></>`)
     setTimeout(generateWorld, 10000)
+  } else {
+    Omegga.broadcast(`<color="00ffff"> > </>Mined Bricks <color="00ff00">${emptyBricks.length}<color="ffffff">/</>${mineLimit}</>`)
   }
 
 }
@@ -612,10 +775,9 @@ function checkOverLimit() {
 
 function generateWorld() {
   Omegga.writeln(`Bricks.Clearall`)
-  Omegga.writeln(`Bricks.Load "UnlimitedMiningStructures/Spawn" 0 0 0 0`)
+  Omegga.writeln(`Bricks.Load "UnlimitedMiningStructures/Spawn" 0 0 0 1`)
   Omegga.broadcast(`Generating World... You might want to press <size="24">ctrl+k</> to respawn.`)
-  emptyBricks = new Set();
+  emptyBricks = [];
   isWorldGenerating = false;
 }
-
 
