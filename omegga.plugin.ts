@@ -521,7 +521,6 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                   if(lastClicksLeft != null) {
                     if(updatedBlockData.clicksLeft >= lastClicksLeft){
                       this.store.delete(`${positionX},${positionY},${positionZ}`)
-                      this.omegga.broadcast(`A blocks data has been cleared via timer!`)
                       clearInterval(blockTimer)
                     }
                   }
@@ -534,7 +533,6 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                 emptyBricks.push([positionX, positionY, positionZ]);
                 Omegga.writeln(`Bricks.ClearRegion ${position[0]} ${position[1]} ${position[2]} 20 20 20`);
                 this.store.delete(`${positionX},${positionY},${positionZ}`)
-                this.omegga.broadcast(`A blocks data has been cleared via mining!`)
 
 
                 // Comparing index and placing neighbour dirt 
