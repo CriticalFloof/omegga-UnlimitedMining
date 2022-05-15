@@ -13,9 +13,7 @@ type Config = { mineLimit:number };
 interface PlayerData {
   money:number,
   pickaxeStrength:number,
-  clicksLeft:number,
   levelUpCost:number,
-  lastBrickPosition:Vector,
   interactCooldown:boolean,
   heatSuits:number,
   radSuits:number,
@@ -26,6 +24,10 @@ interface PlayerData {
 interface ServerStats {
   serverEconPercent:number,
   valueModifier:number
+}
+
+interface BlockData {
+  clicksLeft:number
 }
 
 
@@ -61,7 +63,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
       await this.store.set("serverStats",serverData)
     }
     Omegga.broadcast(`Loading<color="22ff77"><size="24"> Brickadia Unlimited Mining!</></>`)
-    Omegga.broadcast(`<size="12">Verison 0.0.1</>`)
+    Omegga.broadcast(`<size="12">Verison 0.0.2</>`)
 
     mineLimit = this.config.mineLimit;
 
@@ -81,9 +83,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
               playerData = {
               money:0,
               pickaxeStrength:1,
-              clicksLeft:0,
               levelUpCost:50,
-              lastBrickPosition:null,
               interactCooldown:false,
               heatSuits:0,
               radSuits:0,
@@ -140,9 +140,7 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
         playerData = {
           money:0,
           pickaxeStrength:1,
-          clicksLeft:0,
           levelUpCost:50,
-          lastBrickPosition:null,
           interactCooldown:false,
           heatSuits:0,
           radSuits:0,
@@ -509,18 +507,35 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
             
             //check what type of ore, and apply the type of ore to a tag
             interactOreIndex(ore)
-            //Got to make the bricks serverside
               
-  
-              if(playerData.lastBrickPosition[0] != positionX || playerData.lastBrickPosition[1] != positionY || playerData.lastBrickPosition[2] != positionZ) {
-                playerData.clicksLeft = oreTag.duribility
+            //Take the brick's position and set the store key to it's position
+              
+              let blockData:BlockData = await this.store.get(`${positionX},${positionY},${positionZ}`)
+              if(blockData == null) {
+                blockData = {
+                  clicksLeft:oreTag.duribility,
+                }
+                let lastClicksLeft = null;
+                let blockTimer = setInterval(async () => {
+                  let updatedBlockData:BlockData = await this.store.get(`${positionX},${positionY},${positionZ}`)
+                  if(lastClicksLeft != null) {
+                    if(updatedBlockData.clicksLeft >= lastClicksLeft){
+                      this.store.delete(`${positionX},${positionY},${positionZ}`)
+                      this.omegga.broadcast(`A blocks data has been cleared via timer!`)
+                      clearInterval(blockTimer)
+                    }
+                  }
+                  lastClicksLeft = updatedBlockData.clicksLeft 
+                },10000)
               }
-              playerData.clicksLeft += -playerData.pickaxeStrength
-              if(playerData.clicksLeft <= 0) {
-                // Functions that are nested in the actual init() because I dont know how to get Sets to work in a global or module scope at all.
-                // Deleting and storing the brick coordinates in a set
+              blockData.clicksLeft += -playerData.pickaxeStrength;
+              if(blockData.clicksLeft <= 0) {
+                // Deleting and storing the brick coordinates in a set as well as deleting the plugin store location and it's timer
                 emptyBricks.push([positionX, positionY, positionZ]);
                 Omegga.writeln(`Bricks.ClearRegion ${position[0]} ${position[1]} ${position[2]} 20 20 20`);
+                this.store.delete(`${positionX},${positionY},${positionZ}`)
+                this.omegga.broadcast(`A blocks data has been cleared via mining!`)
+
 
                 // Comparing index and placing neighbour dirt 
                 const publicUser = {
@@ -648,9 +663,9 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
               } //Outside the "breaking brick" Conditional vvv
               else {
                 if(oreValue != 0) {
-                  Omegga.middlePrint(player.name,`${oreTag.name} ${playerData.clicksLeft} / ${oreTag.duribility} <br><color="44ff44">Worth ${oreValue}$</></>`)
+                  Omegga.middlePrint(player.name,`${oreTag.name} ${blockData.clicksLeft} / ${oreTag.duribility} <br><color="44ff44">Worth ${oreValue}$</></>`)
                 } else {
-                  Omegga.middlePrint(player.name,`${oreTag.name} ${playerData.clicksLeft} / ${oreTag.duribility}`)
+                  Omegga.middlePrint(player.name,`${oreTag.name} ${blockData.clicksLeft} / ${oreTag.duribility}`)
                 }
                 //Check if the ore damages without a heatsuit
                 if(oreTag.consumesHeatSuit) {
@@ -664,10 +679,10 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                     Omegga.getPlayer(player.id).damage(5)
                   }
                 }
+                await this.store.set(`${positionX},${positionY},${positionZ}`,blockData)
               }
-        playerData.lastBrickPosition = [positionX, positionY, positionZ]
-        await this.store.set(player.id,playerData)
-        }
+            await this.store.set(player.id,playerData)
+          }
         }
         
       });
