@@ -532,7 +532,6 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                 // Deleting and storing the brick coordinates in a set as well as deleting the plugin store location and it's timer
                 emptyBricks.push([positionX, positionY, positionZ]);
                 Omegga.writeln(`Bricks.ClearRegion ${position[0]} ${position[1]} ${position[2]} 20 20 20`);
-                this.store.delete(`${positionX},${positionY},${positionZ}`)
 
 
                 // Comparing index and placing neighbour dirt 
