@@ -91,8 +91,6 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
               rank:0
             }
             await this.store.set(player.id,playerData)
-            console.log(await this.store.get(player.id))
-            console.log(player.id)
           } else {
             playerData.interactCooldown = false;
             await this.store.set(player.id,playerData)
@@ -362,7 +360,6 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
     //help
     .on('cmd:helpmining', async (name:string, section:string, page:string)  => {
       const player = Omegga.getPlayer(name)
-      console.log(section)
       if(section == undefined) {
         Omegga.whisper(player, `<size="24"><color="00ffff"> > Brickadia Unlimited Mining Help Pages</></>
         <color="00ffff"> > </><color="00ff00">/helpmining basic</> - Basic functions of the game
@@ -513,15 +510,18 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
               let blockData:BlockData = await this.store.get(`${positionX},${positionY},${positionZ}`)
               if(blockData == null) {
                 blockData = {
-                  clicksLeft:oreTag.duribility,
+                  clicksLeft:oreTag.duribility
                 }
                 let lastClicksLeft = null;
                 let blockTimer = setInterval(async () => {
                   let updatedBlockData:BlockData = await this.store.get(`${positionX},${positionY},${positionZ}`)
+                  if(updatedBlockData == null) {
+                    clearInterval(blockTimer)
+                    return;
+                  } 
                   if(lastClicksLeft != null) {
                     if(updatedBlockData.clicksLeft >= lastClicksLeft){
                       this.store.delete(`${positionX},${positionY},${positionZ}`)
-                      clearInterval(blockTimer)
                     }
                   }
                   lastClicksLeft = updatedBlockData.clicksLeft 
@@ -559,7 +559,6 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
                 let y1push = true
                 let z1push = true
                 for(let i = 0; i < emptyBricks.length; i++) {
-                  console.log(`${emptyBricks[i][0]},${emptyBricks[i][1]},${emptyBricks[i][2]}`)
                   if (emptyBricks[i][0] == x0[0]&&emptyBricks[i][1] == x0[1]&&emptyBricks[i][2] == x0[2]){x0push = false}
                   if (emptyBricks[i][0] == y0[0]&&emptyBricks[i][1] == y0[1]&&emptyBricks[i][2] == y0[2]){y0push = false}
                   if (emptyBricks[i][0] == z0[0]&&emptyBricks[i][1] == z0[1]&&emptyBricks[i][2] == z0[2]){z0push = false}
