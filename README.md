@@ -19,6 +19,8 @@ This plugin is WIP, this repository is used to send files to a server host for t
 
 `omegga install gh:CriticalFloof/UnlimitedMining`
 
+Once installed, go into the plugin's folder and move the "UnlimitedMiningStructures" folder into your server's Builds folder.
+
 _TODO: more steps...?_
 
 ## Usage
